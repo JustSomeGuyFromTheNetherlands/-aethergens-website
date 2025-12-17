@@ -5,7 +5,11 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const dataDir = path.join(__dirname, 'data')
+// Vercel uses /tmp for writable storage, fallback to local data directory
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV
+const dataDir = isVercel 
+  ? path.join('/tmp', 'aethergens-data')
+  : path.join(__dirname, 'data')
 
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
