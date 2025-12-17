@@ -23,7 +23,6 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
-const HOST = process.env.HOST || '0.0.0.0'
 const HOST = process.env.HOST || '0.0.0.0' // Allow external connections in Docker
 
 app.use(cors())
