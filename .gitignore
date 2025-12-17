@@ -9,5 +9,7 @@ logs/
 *.swp
 *.swo
 *~
+# Mailjet config with API keys
+public/data/mailjet_config.json
 
 
