@@ -377,8 +377,8 @@ app.get('/api/staff-applications/:id', async (req, res) => {
 
 app.post('/api/staff-applications', async (req, res) => {
   try {
-    const { name, email, discord, age, experience, why, previousStaff, minecraftUsername, rankId, answers } = req.body
-    const id = await createStaffApplication(name, email, discord, age, experience, why, previousStaff, minecraftUsername, rankId, answers, 'pending')
+    const { name, email, discordUsername, minecraftUsername, rankId, answers } = req.body
+    const id = await createStaffApplication({ name, email, discordUsername, minecraftUsername, rankId, answers })
     
     // Send notification email to admin
     const application = await getStaffApplicationById(id)
@@ -387,6 +387,7 @@ app.post('/api/staff-applications', async (req, res) => {
     
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating staff application:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
