@@ -23,6 +23,8 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const HOST = process.env.HOST || '0.0.0.0'
+const HOST = process.env.HOST || '0.0.0.0' // Allow external connections in Docker
 
 app.use(cors())
 app.use(express.json())
@@ -472,20 +474,40 @@ app.delete('/api/staff-ranks/:id', async (req, res) => {
   }
 })
 
-// Serve static files in production
+// Serve static files in production (after API routes)
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')))
+  const distPath = path.join(__dirname, '../dist')
   
+  // Log for debugging
+  console.log(`📁 Serving static files from: ${distPath}`)
+  
+  // Serve static files (CSS, JS, images, etc.) with explicit root
+  app.use(express.static(distPath, {
+    index: false, // Don't serve index.html automatically
+    extensions: ['html', 'js', 'css', 'json', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+  }))
+  
+  // Serve React app for all non-API routes (SPA routing)
+  // This must be last to catch all routes that don't match API or static files
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'))
+    // Skip API routes - they should have been handled above
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' })
+    }
+    
+    const indexPath = path.join(distPath, 'index.html')
+    console.log(`📄 Serving index.html for: ${req.path}`)
+    res.sendFile(indexPath)
   })
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`)
   console.log(`📡 API endpoints available at /api/*`)
   if (process.env.NODE_ENV === 'production') {
     console.log(`🌐 Serving production build`)
+  } else {
+    console.log(`🔧 Development mode - Frontend on port 3000`)
   }
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
