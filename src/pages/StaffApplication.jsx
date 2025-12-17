@@ -52,23 +52,35 @@ export default function StaffApplication() {
     })
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/staff-applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          rankId: selectedRank.id,
-          age: parseInt(formData.age)
-        })
-      })
-      if (res.ok) {
-        setSubmitted(true)
-      } else {
-        alert('Error submitting application. Please try again.')
+      // Load existing applications
+      const existingApps = JSON.parse(localStorage.getItem('staff_applications') || '[]')
+      const newApp = {
+        id: Date.now(),
+        ...formData,
+        rank_id: selectedRank.id,
+        age: parseInt(formData.age),
+        status: 'pending',
+        created_at: new Date().toISOString()
       }
+      const updatedApps = [...existingApps, newApp]
+      localStorage.setItem('staff_applications', JSON.stringify(updatedApps))
+      
+      // Download JSON file
+      const blob = new Blob([JSON.stringify(updatedApps, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'staff_applications.json'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      setSubmitted(true)
+      alert('✅ Application submitted! Please upload the downloaded JSON file to /public/data/staff_applications.json')
     } catch (err) {
       alert('Error submitting application. Please try again.')
     }
