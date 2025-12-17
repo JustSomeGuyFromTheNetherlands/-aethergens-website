@@ -472,5 +472,23 @@ app.delete('/api/staff-ranks/:id', async (req, res) => {
   }
 })
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('API Error:', err)
+  res.status(500).json({ 
+    success: false, 
+    error: err.message || 'Internal server error',
+    path: req.path 
+  })
+})
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    error: `API endpoint not found: ${req.path}` 
+  })
+})
+
 // Vercel serverless function handler
 export default app

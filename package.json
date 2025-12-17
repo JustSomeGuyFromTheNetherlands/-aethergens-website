@@ -13,6 +13,9 @@
     "start:pterodactyl": "node server/index.js",
     "vercel-build": "npm run build"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
