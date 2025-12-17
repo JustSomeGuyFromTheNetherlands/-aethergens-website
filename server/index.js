@@ -22,8 +22,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
-const PORT = process.env.PORT || 3001
-const HOST = process.env.HOST || '0.0.0.0' // Allow external connections in Docker
+// Pterodactyl uses SERVER_PORT, fallback to PORT or 3001
+const PORT = process.env.SERVER_PORT || process.env.PORT || 3001
+// Pterodactyl needs 0.0.0.0 to accept connections
+const HOST = process.env.SERVER_IP || process.env.HOST || '0.0.0.0'
 
 app.use(cors())
 app.use(express.json())
