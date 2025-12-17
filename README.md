@@ -1,77 +1,73 @@
-# AetherGens Website
+# AetherGens PHP Version
 
-A modern, responsive website for the AetherGens Minecraft server built with React and Tailwind CSS.
+A modern Minecraft server website built with PHP, HTML, CSS, and SQLite.
 
 ## Features
 
-- Modern, responsive design
+- Modern, responsive design with Tailwind CSS
 - Admin panel for content management
-- Static JSON-based data storage
+- SQLite database for data storage
 - Server information display
 - News and changelog sections
-- Gallery
-- Shop integration
-- Staff management
+- Gallery with image management
+- Shop integration with Tebex
+- Staff management system
 - FAQ section
 - Events system
-- Staff applications
+- Staff applications with custom questions
 
 ## Installation
 
-1. Clone the repository: `git clone https://github.com/JustSomeGuyFromTheNetherlands/-aethergens-website.git`
-2. Install dependencies: `npm install`
-3. Start development: `npm run dev`
+1. Upload files to your web server
+2. Make sure PHP 7.4+ is installed with PDO SQLite extension
+3. Set proper permissions on the `data/` directory (755)
+4. Access `index.php` in your browser
 
-## Development
-
-```bash
-npm install
-npm run dev
-```
-
-## Vercel Deployment
-
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Deploy automatically
+The database will be automatically created and populated with default data on first access.
 
 ## Admin Panel
 
-Go to `/admin` and use password: `ik hou van kaas`
+Go to `admin/index.php` and use password: `ik hou van kaas`
 
-**Important:** The admin panel downloads JSON files when you save changes. You must manually upload these downloaded files to the `public/data/` folder on your Vercel deployment.
+## File Structure
+
+```
+php-version/
+├── includes/          # Shared PHP files
+│   ├── database.php   # Database functions
+│   ├── header.php     # HTML head and navigation
+│   └── footer.php     # Footer and scripts
+├── admin/            # Admin panel
+│   ├── index.php     # Login page
+│   ├── panel.php     # Admin dashboard
+│   └── logout.php    # Logout script
+├── data/             # SQLite database
+├── css/              # Custom styles
+├── js/               # JavaScript files
+├── index.php         # Home page
+├── apply.php         # Staff application page
+└── README.md
+```
 
 ## Data Storage
 
-All data is stored in static JSON files in the `public/data/` directory:
+All data is stored in SQLite database (`data/aethergens.db`):
 
-- `server_info.json` - Server information
-- `news.json` - News posts
-- `changelog.json` - Server updates
-- `gallery.json` - Gallery images
-- `shop_items.json` - Shop items
-- `features.json` - Server features
-- `rules.json` - Server rules
-- `staff.json` - Staff members
-- `faq.json` - FAQ entries
-- `events.json` - Events
-- `staff_ranks.json` - Staff positions
-- `staff_applications.json` - Staff applications
-- `mailjet_config.json` - Mailjet API configuration (gitignored for security)
+- Server settings and information
+- News posts, changelog, gallery images
+- Staff members, FAQ, events
+- Staff applications and ranks
 
-## Mailjet Configuration
+## Customization
 
-⚠️ **Note:** Since this is a pure client-side application, email functionality (Mailjet) requires server-side code. The `mailjet_config.json` file is provided for reference only. To enable email notifications for staff applications, you would need to add a serverless function or backend API.
+- Edit `includes/header.php` and `includes/footer.php` for global changes
+- Modify database schema in `includes/database.php`
+- Update styles by editing the Tailwind classes in templates
+- Add new pages by following the existing structure
 
-To configure Mailjet if you add server functionality:
-1. Get your API key and secret from Mailjet dashboard
-2. Update the `mailjet_config.json` file with your credentials
-3. Implement server-side email sending functionality
+## Security Notes
 
-## How to Edit Content
-
-1. Go to `/admin` with password `ik hou van kaas`
-2. Make your changes in the admin panel
-3. When you save, JSON files will be downloaded
-4. Upload the downloaded JSON files to `public/data/` on your Vercel deployment
-5. Changes will be live immediately
+- Change the admin password in `admin/index.php`
+- The database file contains all site data - keep it secure
+- Consider using HTTPS in production
+- Regular backups of the `data/` directory are recommended
