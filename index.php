@@ -129,24 +129,24 @@ include 'includes/header.php';
     </section>
 
     <!-- Stats Section -->
-    <section class="py-16 bg-aether-blue text-white">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <section class="py-16 bg-aether-blue text-white" style="position: relative; overflow: hidden;">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8" style="position: relative; z-index: 1;">
             <div class="grid md:grid-cols-4 gap-8 text-center">
-                <div>
-                    <div class="text-4xl font-bold mb-2">500+</div>
-                    <div class="text-blue-100">Active Players</div>
+                <div style="transition: transform 0.3s ease;">
+                    <div class="text-4xl font-bold mb-2" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">500+</div>
+                    <div class="text-blue-100" style="font-size: 1rem; opacity: 0.9;">Active Players</div>
                 </div>
-                <div>
-                    <div class="text-4xl font-bold mb-2">24/7</div>
-                    <div class="text-blue-100">Uptime</div>
+                <div style="transition: transform 0.3s ease;">
+                    <div class="text-4xl font-bold mb-2" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">24/7</div>
+                    <div class="text-blue-100" style="font-size: 1rem; opacity: 0.9;">Uptime</div>
                 </div>
-                <div>
-                    <div class="text-4xl font-bold mb-2">10+</div>
-                    <div class="text-blue-100">Staff Members</div>
+                <div style="transition: transform 0.3s ease;">
+                    <div class="text-4xl font-bold mb-2" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">10+</div>
+                    <div class="text-blue-100" style="font-size: 1rem; opacity: 0.9;">Staff Members</div>
                 </div>
-                <div>
-                    <div class="text-4xl font-bold mb-2">5+</div>
-                    <div class="text-blue-100">Years Online</div>
+                <div style="transition: transform 0.3s ease;">
+                    <div class="text-4xl font-bold mb-2" style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">5+</div>
+                    <div class="text-blue-100" style="font-size: 1rem; opacity: 0.9;">Years Online</div>
                 </div>
             </div>
         </div>
