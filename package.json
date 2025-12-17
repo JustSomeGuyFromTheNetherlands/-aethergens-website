@@ -10,7 +10,8 @@
     "start": "concurrently \"npm run server\" \"npm run dev\"",
     "start:dev": "concurrently \"npm run server\" \"npm run dev\"",
     "start:prod": "node server/index.js",
-    "start:pterodactyl": "node server/index.js"
+    "start:pterodactyl": "node server/index.js",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
