@@ -6,14 +6,38 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Vercel uses /tmp for writable storage, fallback to local data directory
-const isVercel = process.env.VERCEL || process.env.VERCEL_ENV
+// Detect Vercel by checking multiple environment variables and path
+const isVercel = process.env.VERCEL || 
+                 process.env.VERCEL_ENV || 
+                 process.env.VERCEL_URL ||
+                 __dirname.includes('/var/task') ||
+                 __dirname.includes('/tmp')
+
 const dataDir = isVercel 
   ? path.join('/tmp', 'aethergens-data')
   : path.join(__dirname, 'data')
 
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
+// Ensure data directory exists - wrap in try-catch for safety
+try {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true })
+  }
+} catch (err) {
+  console.error(`Failed to create data directory ${dataDir}:`, err)
+  // Fallback to /tmp if original location fails
+  if (!isVercel && !dataDir.includes('/tmp')) {
+    console.warn('Falling back to /tmp for data storage')
+    const tmpDir = path.join('/tmp', 'aethergens-data')
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true })
+      }
+      // Update dataDir to tmp
+      Object.defineProperty(module.exports || {}, 'dataDir', { value: tmpDir, writable: false })
+    } catch (tmpErr) {
+      console.error('Failed to create /tmp directory:', tmpErr)
+    }
+  }
 }
 
 const getFilePath = (table) => path.join(dataDir, `${table}.json`)
