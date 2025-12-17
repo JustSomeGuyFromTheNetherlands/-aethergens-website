@@ -328,10 +328,10 @@ app.get('/api/events/:id', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   try {
-    const { title, description, startDate, endDate, imageUrl, location, featured } = req.body
-    const id = await createEvent(title, description, startDate, endDate, imageUrl, location, featured)
+    const id = await createEvent(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating event:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -449,10 +449,10 @@ app.get('/api/staff-ranks/:id', async (req, res) => {
 
 app.post('/api/staff-ranks', async (req, res) => {
   try {
-    const { name, description, questions, open, orderIndex } = req.body
-    const id = await createStaffRank(name, description, questions, open, orderIndex)
+    const id = await createStaffRank(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating staff rank:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
