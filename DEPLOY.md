@@ -91,32 +91,39 @@ pm2 startup
 
 ## Nginx Reverse Proxy Setup
 
-Create `/etc/nginx/sites-available/aethergens`:
+**IMPORTANT:** The backend server MUST be running on port 3001 for this to work!
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
+1. **Copy Nginx configuration:**
+   ```bash
+   sudo cp nginx.conf.example /etc/nginx/sites-available/aethergens
+   sudo nano /etc/nginx/sites-available/aethergens
+   # Update server_name with your domain
+   ```
 
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
+2. **Enable site:**
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/aethergens /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
 
-Enable site:
-```bash
-sudo ln -s /etc/nginx/sites-available/aethergens /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
+3. **Verify backend is running:**
+   ```bash
+   # Test backend directly
+   curl http://localhost:3001/api/server-info
+   # Should return JSON, not 404
+   
+   # If 404, start backend:
+   pm2 start ecosystem.config.js
+   # Or
+   NODE_ENV=production npm run start:prod
+   ```
+
+4. **Check Nginx logs if issues persist:**
+   ```bash
+   sudo tail -f /var/log/nginx/error.log
+   sudo tail -f /var/log/nginx/access.log
+   ```
 
 ## SSL with Let's Encrypt
 
