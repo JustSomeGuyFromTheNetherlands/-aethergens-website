@@ -32,25 +32,48 @@ const readFile = (table) => {
 }
 
 const writeFile = (table, data) => {
-  const filePath = getFilePath(table)
   try {
+    const filePath = getFilePath(table)
+    // Ensure directory exists
+    const dir = path.dirname(filePath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+    return true
   } catch (err) {
     console.error(`Error writing ${table}:`, err)
+    // In Vercel/serverless, file system is read-only, so we log but don't throw
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      console.warn(`⚠️  Running in serverless environment - file writes disabled for ${table}`)
+      return false
+    }
     throw err
   }
 }
 
 export function initDatabase() {
-  // Initialize default data if files don't exist
-  const tables = ['server_info', 'news', 'changelog', 'gallery', 'shop_items', 'features', 'rules', 'staff', 'faq', 'events', 'staff_applications', 'staff_ranks']
-  
-  tables.forEach(table => {
-    const filePath = getFilePath(table)
-    if (!fs.existsSync(filePath)) {
-      writeFile(table, [])
-    }
-  })
+  try {
+    // Initialize default data if files don't exist
+    const tables = ['server_info', 'news', 'changelog', 'gallery', 'shop_items', 'features', 'rules', 'staff', 'faq', 'events', 'staff_applications', 'staff_ranks']
+    
+    tables.forEach(table => {
+      try {
+        const filePath = getFilePath(table)
+        if (!fs.existsSync(filePath)) {
+          const written = writeFile(table, [])
+          if (!written && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+            console.warn(`⚠️  Could not create ${table}.json in serverless environment`)
+          }
+        }
+      } catch (err) {
+        console.error(`Error initializing table ${table}:`, err)
+      }
+    })
+  } catch (err) {
+    console.error('Error in initDatabase:', err)
+    throw err
+  }
 
   // Set default server info
   const serverInfo = readFile('server_info')
