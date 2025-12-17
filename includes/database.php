@@ -5,6 +5,12 @@ define('DB_FILE', __DIR__ . '/../data/aethergens.db');
 // Initialize database
 function initDatabase() {
     try {
+        // Ensure data directory exists
+        $dataDir = dirname(DB_FILE);
+        if (!is_dir($dataDir)) {
+            mkdir($dataDir, 0755, true);
+        }
+
         $db = new PDO('sqlite:' . DB_FILE);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -213,8 +219,18 @@ function initDatabase() {
 // Get database connection
 function getDB() {
     static $db = null;
-    if ($db === null) {
-        $db = initDatabase();
+    static $initialized = false;
+
+    if ($db === null && !$initialized) {
+        try {
+            $db = initDatabase();
+            $initialized = true;
+        } catch (Exception $e) {
+            // If database fails, return null and don't try again
+            error_log("Database initialization failed: " . $e->getMessage());
+            $initialized = true; // Don't try again
+            return null;
+        }
     }
     return $db;
 }

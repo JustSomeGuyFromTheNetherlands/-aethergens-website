@@ -4,14 +4,71 @@ require_once 'includes/database.php';
 $pageTitle = 'Home';
 $db = getDB();
 
-// Get data from database
-$serverInfo = $db->query("SELECT * FROM server_info LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-$features = $db->query("SELECT * FROM features ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$rules = $db->query("SELECT * FROM rules ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$staff = $db->query("SELECT * FROM staff ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$faq = $db->query("SELECT * FROM faq ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$news = $db->query("SELECT * FROM news WHERE published = 1 ORDER BY created_at DESC LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
-$events = $db->query("SELECT * FROM events ORDER BY created_at DESC LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+// Default data in case database fails
+$serverInfo = [
+    'online_players' => 0,
+    'version' => '1.20+',
+    'description' => 'Discover a new world full of adventure and possibilities on AetherGens. Build, explore, and enjoy the best Minecraft experience with our custom features, friendly community, and dedicated staff team.',
+    'server_ip' => 'play.aethergens.com'
+];
+
+$features = [
+    ['icon' => '🏗️', 'title' => 'Custom Generators', 'description' => 'Advanced generator system for unique gameplay'],
+    ['icon' => '💰', 'title' => 'Economy System', 'description' => 'Trade, buy, and sell with our robust economy'],
+    ['icon' => '🎯', 'title' => 'Quests & Rewards', 'description' => 'Complete quests and earn amazing rewards'],
+    ['icon' => '🏠', 'title' => 'Land Protection', 'description' => 'Protect your builds with our land claim system'],
+    ['icon' => '🎨', 'title' => 'Custom Items', 'description' => 'Unique items and weapons to discover'],
+    ['icon' => '👥', 'title' => 'Active Community', 'description' => 'Join our friendly and welcoming community']
+];
+
+$rules = [
+    ['rule_text' => 'No griefing or stealing from other players'],
+    ['rule_text' => 'Be respectful to all players and staff members'],
+    ['rule_text' => 'No cheating, hacking, or exploiting glitches'],
+    ['rule_text' => 'No spamming in chat or advertising other servers'],
+    ['rule_text' => 'Keep chat appropriate and family-friendly'],
+    ['rule_text' => 'Follow staff instructions and decisions']
+];
+
+$staff = [];
+$faq = [
+    ['question' => 'How do I join the server?', 'answer' => 'Simply connect to play.aethergens.com using Minecraft version 1.20 or higher.'],
+    ['question' => 'Is the server free to play?', 'answer' => 'Yes! AetherGens is completely free to play with optional cosmetic donations.'],
+    ['question' => 'What makes AetherGens different?', 'answer' => 'Our custom generator system, active community, and dedicated staff make us unique.'],
+    ['question' => 'How do I report a player?', 'answer' => 'Use /report in-game or contact a staff member directly.']
+];
+
+$news = [];
+$events = [];
+
+// Try to get data from database if available
+if ($db) {
+    try {
+        $serverInfoDB = $db->query("SELECT * FROM server_info LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        if ($serverInfoDB) $serverInfo = $serverInfoDB;
+
+        $featuresDB = $db->query("SELECT * FROM features ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        if ($featuresDB) $features = $featuresDB;
+
+        $rulesDB = $db->query("SELECT * FROM rules ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        if ($rulesDB) $rules = $rulesDB;
+
+        $staffDB = $db->query("SELECT * FROM staff ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        if ($staffDB) $staff = $staffDB;
+
+        $faqDB = $db->query("SELECT * FROM faq ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        if ($faqDB) $faq = $faqDB;
+
+        $newsDB = $db->query("SELECT * FROM news WHERE published = 1 ORDER BY created_at DESC LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+        if ($newsDB) $news = $newsDB;
+
+        $eventsDB = $db->query("SELECT * FROM events ORDER BY created_at DESC LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+        if ($eventsDB) $events = $eventsDB;
+    } catch (Exception $e) {
+        // Database queries failed, but page will still render with default data
+        error_log("Database query failed: " . $e->getMessage());
+    }
+}
 
 include 'includes/header.php';
 ?>
