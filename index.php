@@ -83,25 +83,25 @@ include 'includes/header.php';
                 <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto slide-up">
                     <?php echo htmlspecialchars($serverInfo['description'] ?? 'Discover a new world full of adventure and possibilities.'); ?>
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-                    <div class="bg-white rounded-lg shadow-md p-6 min-w-[200px]">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12" style="flex-wrap: wrap;">
+                    <div class="bg-white rounded-lg shadow-md p-6" style="min-width: 200px; text-align: center;">
                         <div class="text-3xl font-bold text-aether-blue"><?php echo htmlspecialchars($serverInfo['online_players'] ?? '0'); ?></div>
                         <div class="text-gray-600">Online Players</div>
                     </div>
-                    <div class="bg-white rounded-lg shadow-md p-6 min-w-[200px]">
+                    <div class="bg-white rounded-lg shadow-md p-6" style="min-width: 200px; text-align: center;">
                         <div class="text-3xl font-bold text-aether-blue"><?php echo htmlspecialchars($serverInfo['version'] ?? '1.20+'); ?></div>
                         <div class="text-gray-600">Server Version</div>
                     </div>
-                    <div class="bg-white rounded-lg shadow-md p-6 min-w-[200px]">
-                        <div class="text-3xl font-bold text-aether-blue" style="color: #0D47A1 !important;"><?php echo htmlspecialchars($serverInfo['server_ip'] ?? 'play.aethergens.com'); ?></div>
+                    <div class="bg-white rounded-lg shadow-md p-6" style="min-width: 200px; text-align: center;">
+                        <div class="text-3xl font-bold" style="color: #0D47A1 !important;"><?php echo htmlspecialchars($serverInfo['server_ip'] ?? 'play.aethergens.com'); ?></div>
                         <div class="text-gray-600">Server IP</div>
                     </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="https://www.minecraft.net/" target="_blank" class="bg-aether-blue text-white px-8 py-3 rounded-md hover:bg-deep-blue transition-colors font-medium">
+                    <a href="https://www.minecraft.net/" target="_blank" class="bg-aether-blue" style="padding: 0.75rem 2rem; border-radius: 0.375rem; text-decoration: none; display: inline-block;">
                         <i class="fas fa-download mr-2"></i>Download Minecraft
                     </a>
-                    <a href="#features" class="border-2 border-aether-blue text-aether-blue px-8 py-3 rounded-md hover:bg-aether-blue hover:text-white transition-colors font-medium">
+                    <a href="#features" class="border-2 border-aether-blue" style="padding: 0.75rem 2rem; border-radius: 0.375rem; text-decoration: none; display: inline-block;">
                         <i class="fas fa-info-circle mr-2"></i>Learn More
                     </a>
                 </div>

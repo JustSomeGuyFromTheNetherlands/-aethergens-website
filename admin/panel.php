@@ -16,7 +16,7 @@ $message = '';
 $messageType = '';
 
 // Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $db) {
     try {
         if (isset($_POST['action'])) {
             switch ($_POST['action']) {
@@ -251,21 +251,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Error: ' . $e->getMessage();
         $messageType = 'error';
     }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !$db) {
+    $message = 'Database connection failed. Please check database configuration.';
+    $messageType = 'error';
 }
 
 // Get data for display
-$serverInfo = $db->query("SELECT * FROM server_info LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-$news = $db->query("SELECT * FROM news ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$changelog = $db->query("SELECT * FROM changelog ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$gallery = $db->query("SELECT * FROM gallery ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$shopItems = $db->query("SELECT * FROM shop_items ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$features = $db->query("SELECT * FROM features ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$rules = $db->query("SELECT * FROM rules ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$staff = $db->query("SELECT * FROM staff ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$faq = $db->query("SELECT * FROM faq ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$events = $db->query("SELECT * FROM events ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$staffRanks = $db->query("SELECT * FROM staff_ranks ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
-$staffApplications = $db->query("SELECT * FROM staff_applications ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$serverInfo = ['online_players' => 0, 'version' => '1.20+', 'description' => '', 'server_ip' => 'play.aethergens.com'];
+$news = [];
+$changelog = [];
+$gallery = [];
+$shopItems = [];
+$features = [];
+$rules = [];
+$staff = [];
+$faq = [];
+$events = [];
+$staffRanks = [];
+$staffApplications = [];
+
+if ($db) {
+    try {
+        $serverInfoDB = $db->query("SELECT * FROM server_info LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        if ($serverInfoDB) $serverInfo = $serverInfoDB;
+        
+        $news = $db->query("SELECT * FROM news ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $changelog = $db->query("SELECT * FROM changelog ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $gallery = $db->query("SELECT * FROM gallery ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $shopItems = $db->query("SELECT * FROM shop_items ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $features = $db->query("SELECT * FROM features ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        $rules = $db->query("SELECT * FROM rules ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        $staff = $db->query("SELECT * FROM staff ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        $faq = $db->query("SELECT * FROM faq ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        $events = $db->query("SELECT * FROM events ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $staffRanks = $db->query("SELECT * FROM staff_ranks ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+        $staffApplications = $db->query("SELECT * FROM staff_applications ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Database query error: " . $e->getMessage());
+    }
+}
 
 $activeTab = $_GET['tab'] ?? 'server';
 

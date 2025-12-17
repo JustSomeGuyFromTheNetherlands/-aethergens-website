@@ -5,14 +5,21 @@ $pageTitle = 'Apply for Staff';
 $db = getDB();
 
 // Get open ranks
-$ranks = $db->query("SELECT * FROM staff_ranks WHERE open = 1 ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+$ranks = [];
+if ($db) {
+    try {
+        $ranks = $db->query("SELECT * FROM staff_ranks WHERE open = 1 ORDER BY order_index")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error fetching ranks: " . $e->getMessage());
+    }
+}
 
 // Handle form submission
 $message = '';
 $messageType = '';
 $submitted = false;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $db) {
     try {
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
@@ -55,6 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Error submitting application: ' . $e->getMessage();
         $messageType = 'error';
     }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !$db) {
+    $message = 'Database connection failed. Please contact an administrator.';
+    $messageType = 'error';
 }
 
 include 'includes/header.php';
