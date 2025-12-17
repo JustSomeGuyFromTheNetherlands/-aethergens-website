@@ -58,10 +58,10 @@ app.get('/api/server-info', async (req, res) => {
 
 app.post('/api/server-info', async (req, res) => {
   try {
-    const { onlinePlayers, version, description, serverIp } = req.body
-    updateServerInfo(onlinePlayers, version, description, serverIp)
+    await updateServerInfo(req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating server info:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -87,20 +87,20 @@ app.get('/api/news/:id', async (req, res) => {
 
 app.post('/api/news', async (req, res) => {
   try {
-    const { title, content, author, imageUrl, published } = req.body
-    const id = await createNews(title, content, author, imageUrl, published)
+    const id = await createNews(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating news:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
 
 app.put('/api/news/:id', async (req, res) => {
   try {
-    const { title, content, author, imageUrl, published } = req.body
-    await updateNews(req.params.id, title, content, author, imageUrl, published)
+    await updateNews(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating news:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -126,20 +126,20 @@ app.get('/api/changelog', async (req, res) => {
 
 app.post('/api/changelog', async (req, res) => {
   try {
-    const { version, title, description, type } = req.body
-    const id = await createChangelog(version, title, description, type)
+    const id = await createChangelog(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating changelog:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
 
 app.put('/api/changelog/:id', async (req, res) => {
   try {
-    const { version, title, description, type } = req.body
-    await updateChangelog(req.params.id, version, title, description, type)
+    await updateChangelog(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating changelog:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -165,20 +165,20 @@ app.get('/api/gallery', async (req, res) => {
 
 app.post('/api/gallery', async (req, res) => {
   try {
-    const { title, imageUrl, description, category, featured } = req.body
-    const id = await createGalleryItem(title, imageUrl, description, category, featured)
+    const id = await createGalleryItem(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating gallery item:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
 
 app.put('/api/gallery/:id', async (req, res) => {
   try {
-    const { title, imageUrl, description, category, featured } = req.body
-    await updateGalleryItem(req.params.id, title, imageUrl, description, category, featured)
+    await updateGalleryItem(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating gallery item:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -204,20 +204,20 @@ app.get('/api/shop', async (req, res) => {
 
 app.post('/api/shop', async (req, res) => {
   try {
-    const { name, description, price, category, tebexId, imageUrl, featured, active } = req.body
-    const id = await createShopItem(name, description, price, category, tebexId, imageUrl, featured, active)
+    const id = await createShopItem(req.body)
     res.json({ success: true, id })
   } catch (err) {
+    console.error('Error creating shop item:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
 
 app.put('/api/shop/:id', async (req, res) => {
   try {
-    const { name, description, price, category, tebexId, imageUrl, featured, active } = req.body
-    await updateShopItem(req.params.id, name, description, price, category, tebexId, imageUrl, featured, active)
+    await updateShopItem(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating shop item:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -338,10 +338,10 @@ app.post('/api/events', async (req, res) => {
 
 app.put('/api/events/:id', async (req, res) => {
   try {
-    const { title, description, startDate, endDate, imageUrl, location, featured } = req.body
-    await updateEvent(req.params.id, title, description, startDate, endDate, imageUrl, location, featured)
+    await updateEvent(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating event:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
@@ -458,10 +458,10 @@ app.post('/api/staff-ranks', async (req, res) => {
 
 app.put('/api/staff-ranks/:id', async (req, res) => {
   try {
-    const { name, description, questions, open, orderIndex } = req.body
-    await updateStaffRank(req.params.id, name, description, questions, open, orderIndex)
+    await updateStaffRank(req.params.id, req.body)
     res.json({ success: true })
   } catch (err) {
+    console.error('Error updating staff rank:', err)
     res.status(500).json({ error: 'Database error' })
   }
 })
