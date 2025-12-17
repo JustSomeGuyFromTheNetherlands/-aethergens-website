@@ -57,6 +57,16 @@ All data is stored in static JSON files in the `public/data/` directory:
 - `events.json` - Events
 - `staff_ranks.json` - Staff positions
 - `staff_applications.json` - Staff applications
+- `mailjet_config.json` - Mailjet API configuration (gitignored for security)
+
+## Mailjet Configuration
+
+⚠️ **Note:** Since this is a pure client-side application, email functionality (Mailjet) requires server-side code. The `mailjet_config.json` file is provided for reference only. To enable email notifications for staff applications, you would need to add a serverless function or backend API.
+
+To configure Mailjet if you add server functionality:
+1. Get your API key and secret from Mailjet dashboard
+2. Update the `mailjet_config.json` file with your credentials
+3. Implement server-side email sending functionality
 
 ## How to Edit Content
 
