@@ -1,818 +1,560 @@
-import fs from 'fs'
+import sqlite3 from 'sqlite3'
+import { promisify } from 'util'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Vercel uses /tmp for writable storage, fallback to local data directory
-// Detect Vercel/serverless by checking environment variables and path
+// Detect Vercel/serverless environment
 const isVercel = !!(process.env.VERCEL || 
                     process.env.VERCEL_ENV || 
                     process.env.VERCEL_URL ||
                     (typeof __dirname === 'string' && __dirname.indexOf('/var/task') !== -1))
 
-// Always use /tmp in serverless environments
-let dataDir
+// Determine database path
+let dbPath
 if (isVercel || (typeof __dirname === 'string' && __dirname.indexOf('/var/task') !== -1)) {
-  dataDir = '/tmp/aethergens-data'
-  console.log('🌐 Serverless environment detected - using /tmp for data storage')
+  // Use /tmp in serverless environments (Vercel allows writes to /tmp)
+  dbPath = '/tmp/aethergens.db'
+  console.log('🌐 Serverless environment detected - using /tmp for database')
 } else {
-  dataDir = path.join(__dirname, 'data')
+  dbPath = path.join(__dirname, 'aethergens.db')
 }
 
-// Ensure data directory exists - wrap in try-catch for safety
-try {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
-    console.log(`✅ Created data directory: ${dataDir}`)
-  }
-} catch (err) {
-  console.error(`❌ Failed to create data directory ${dataDir}:`, err)
-  // Force fallback to /tmp
-  if (dataDir !== '/tmp/aethergens-data') {
-    console.warn('⚠️  Falling back to /tmp for data storage')
-    dataDir = '/tmp/aethergens-data'
-    try {
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true })
-        console.log(`✅ Created fallback data directory: ${dataDir}`)
+let db = null
+
+// Initialize database connection
+function getDatabase() {
+  if (!db) {
+    db = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error('❌ Database connection error:', err)
+        throw err
       }
-    } catch (tmpErr) {
-      console.error('❌ Failed to create /tmp directory:', tmpErr)
-    }
+      console.log(`✅ Connected to SQLite database: ${dbPath}`)
+    })
+    
+    // Enable foreign keys
+    db.run('PRAGMA foreign_keys = ON')
   }
+  return db
 }
 
-const getFilePath = (table) => path.join(dataDir, `${table}.json`)
-
-const readFile = (table) => {
-  try {
-    const filePath = getFilePath(table)
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-    const data = fs.readFileSync(filePath, 'utf8')
-    if (!data || data.trim() === '') {
-      return []
-    }
-    return JSON.parse(data)
-  } catch (err) {
-    console.error(`Error reading ${table}:`, err)
-    return []
-  }
+// Promisify database methods
+const dbRun = (db, sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) reject(err)
+      else resolve({ lastID: this.lastID, changes: this.changes })
+    })
+  })
 }
 
-const writeFile = (table, data) => {
-  try {
-    const filePath = getFilePath(table)
-    // Ensure directory exists
-    const dir = path.dirname(filePath)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
-    }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
-    return true
-  } catch (err) {
-    console.error(`Error writing ${table}:`, err)
-    // In Vercel/serverless, file system is read-only, so we log but don't throw
-    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-      console.warn(`⚠️  Running in serverless environment - file writes disabled for ${table}`)
-      return false
-    }
-    throw err
-  }
+const dbGet = (db, sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err)
+      else resolve(row)
+    })
+  })
 }
 
+const dbAll = (db, sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows || [])
+    })
+  })
+}
+
+// Initialize database schema
 export function initDatabase() {
   try {
-    // Initialize default data if files don't exist
-    const tables = ['server_info', 'news', 'changelog', 'gallery', 'shop_items', 'features', 'rules', 'staff', 'faq', 'events', 'staff_applications', 'staff_ranks']
+    const database = getDatabase()
     
-    tables.forEach(table => {
-      try {
-        const filePath = getFilePath(table)
-        if (!fs.existsSync(filePath)) {
-          const written = writeFile(table, [])
-          if (!written && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
-            console.warn(`⚠️  Could not create ${table}.json in serverless environment`)
-          }
+    // Create tables
+    database.serialize(() => {
+      // Server Info
+      database.run(`CREATE TABLE IF NOT EXISTS server_info (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        online_players INTEGER DEFAULT 0,
+        version TEXT DEFAULT '1.20+',
+        description TEXT,
+        server_ip TEXT DEFAULT 'play.aethergens.com',
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // News
+      database.run(`CREATE TABLE IF NOT EXISTS news (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        author TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // Changelog
+      database.run(`CREATE TABLE IF NOT EXISTS changelog (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version TEXT NOT NULL,
+        changes TEXT NOT NULL,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // Gallery
+      database.run(`CREATE TABLE IF NOT EXISTS gallery (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // Shop Items
+      database.run(`CREATE TABLE IF NOT EXISTS shop_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL,
+        image_url TEXT,
+        tebex_link TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // Features
+      database.run(`CREATE TABLE IF NOT EXISTS features (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        icon TEXT,
+        order_index INTEGER DEFAULT 0
+      )`)
+      
+      // Rules
+      database.run(`CREATE TABLE IF NOT EXISTS rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rule TEXT NOT NULL,
+        description TEXT,
+        order_index INTEGER DEFAULT 0
+      )`)
+      
+      // Staff
+      database.run(`CREATE TABLE IF NOT EXISTS staff (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        rank TEXT NOT NULL,
+        role TEXT,
+        avatar_url TEXT,
+        order_index INTEGER DEFAULT 0
+      )`)
+      
+      // FAQ
+      database.run(`CREATE TABLE IF NOT EXISTS faq (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        order_index INTEGER DEFAULT 0
+      )`)
+      
+      // Events
+      database.run(`CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        date DATETIME NOT NULL,
+        location TEXT,
+        image_url TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`)
+      
+      // Staff Ranks
+      database.run(`CREATE TABLE IF NOT EXISTS staff_ranks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        questions TEXT, -- JSON array of question objects
+        open INTEGER DEFAULT 1, -- 1 = open, 0 = closed
+        order_index INTEGER DEFAULT 0
+      )`)
+      
+      // Staff Applications
+      database.run(`CREATE TABLE IF NOT EXISTS staff_applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rank_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        minecraft_username TEXT NOT NULL,
+        discord_username TEXT,
+        answers TEXT, -- JSON object with answers to custom questions
+        status TEXT DEFAULT 'pending', -- pending, approved, rejected
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (rank_id) REFERENCES staff_ranks(id)
+      )`)
+      
+      // Insert default data if tables are empty
+      dbGet(database, 'SELECT COUNT(*) as count FROM server_info').then(result => {
+        if (result.count === 0) {
+          dbRun(database, `INSERT INTO server_info (online_players, version, description, server_ip) 
+            VALUES (?, ?, ?, ?)`, 
+            [0, '1.20+', 'Discover a new world full of adventure and possibilities on AetherGens. Build, explore, and enjoy the best Minecraft experience with our custom features, friendly community, and dedicated staff team.', 'play.aethergens.com'])
         }
-      } catch (err) {
-        console.error(`Error initializing table ${table}:`, err)
-      }
+      }).catch(err => console.error('Error initializing server_info:', err))
+      
+      dbGet(database, 'SELECT COUNT(*) as count FROM staff_ranks').then(result => {
+        if (result.count === 0) {
+          const defaultRanks = [
+            ['Helper', 'Help new players and moderate the server', JSON.stringify([{ question: 'Why do you want to be a helper?', required: true }]), 1, 1],
+            ['Moderator', 'Moderate the server and enforce rules', JSON.stringify([{ question: 'Why do you want to be a moderator?', required: true }]), 1, 2],
+            ['Admin', 'Manage the server and staff team', JSON.stringify([{ question: 'Why do you want to be an admin?', required: true }]), 0, 3]
+          ]
+          defaultRanks.forEach(rank => {
+            dbRun(database, `INSERT INTO staff_ranks (name, description, questions, open, order_index) VALUES (?, ?, ?, ?, ?)`, rank)
+          })
+        }
+      }).catch(err => console.error('Error initializing staff_ranks:', err))
+      
+      console.log('✅ Database initialized successfully')
     })
   } catch (err) {
-    console.error('Error in initDatabase:', err)
+    console.error('❌ Database initialization error:', err)
     throw err
   }
-
-  // Set default server info
-  const serverInfo = readFile('server_info')
-  if (serverInfo.length === 0) {
-    writeFile('server_info', [{
-      id: 1,
-      online_players: 0,
-      version: '1.20+',
-      description: 'Discover a new world full of adventure and possibilities on AetherGens. Build, explore, and enjoy the best Minecraft experience with our custom features, friendly community, and dedicated staff team.',
-      server_ip: 'play.aethergens.com',
-      updated_at: new Date().toISOString()
-    }])
-  }
-
-  // Set default features
-  const features = readFile('features')
-  if (features.length === 0) {
-    writeFile('features', [
-      { id: 1, icon: '🏗️', title: 'Custom Generators', description: 'Advanced generator system for unique gameplay', order_index: 0 },
-      { id: 2, icon: '💰', title: 'Economy System', description: 'Trade, buy, and sell with our robust economy', order_index: 1 },
-      { id: 3, icon: '🎯', title: 'Quests & Rewards', description: 'Complete quests and earn amazing rewards', order_index: 2 },
-      { id: 4, icon: '🏠', title: 'Land Protection', description: 'Protect your builds with our land claim system', order_index: 3 },
-      { id: 5, icon: '🎨', title: 'Custom Items', description: 'Unique items and weapons to discover', order_index: 4 },
-      { id: 6, icon: '👥', title: 'Active Community', description: 'Join our friendly and welcoming community', order_index: 5 },
-    ])
-  }
-
-  // Set default rules
-  const rules = readFile('rules')
-  if (rules.length === 0) {
-    writeFile('rules', [
-      { id: 1, rule_text: 'No griefing or stealing from other players', order_index: 0 },
-      { id: 2, rule_text: 'Be respectful to all players and staff members', order_index: 1 },
-      { id: 3, rule_text: 'No cheating, hacking, or exploiting glitches', order_index: 2 },
-      { id: 4, rule_text: 'No spamming in chat or advertising other servers', order_index: 3 },
-      { id: 5, rule_text: 'Keep chat appropriate and family-friendly', order_index: 4 },
-      { id: 6, rule_text: 'Follow staff instructions and decisions', order_index: 5 },
-      { id: 7, rule_text: 'No inappropriate builds or usernames', order_index: 6 },
-      { id: 8, rule_text: 'Report bugs and issues to staff instead of exploiting', order_index: 7 },
-    ])
-  }
-
-  // Set default staff
-  const staff = readFile('staff')
-  if (staff.length === 0) {
-    writeFile('staff', [
-      { id: 1, name: 'Admin', role: 'Owner', color: '#DC2626', order_index: 0 },
-      { id: 2, name: 'Moderator', role: 'Admin', color: '#9333EA', order_index: 1 },
-      { id: 3, name: 'Helper', role: 'Moderator', color: '#16A34A', order_index: 2 },
-      { id: 4, name: 'Architect', role: 'Builder', color: '#1565C0', order_index: 3 },
-    ])
-  }
-
-  // Set default FAQ
-  const faq = readFile('faq')
-  if (faq.length === 0) {
-    writeFile('faq', [
-      { id: 1, question: 'How do I join the server?', answer: 'Simply connect to play.aethergens.com using Minecraft version 1.20 or higher.', order_index: 0 },
-      { id: 2, question: 'Is the server free to play?', answer: 'Yes! AetherGens is completely free to play with optional cosmetic donations.', order_index: 1 },
-      { id: 3, question: 'What makes AetherGens different?', answer: 'Our custom generator system, active community, and dedicated staff make us unique.', order_index: 2 },
-      { id: 4, question: 'How do I report a player?', answer: 'Use /report in-game or contact a staff member directly.', order_index: 3 },
-    ])
-  }
-
-  // Set default staff ranks
-  try {
-    const staffRanks = readFile('staff_ranks')
-    if (!staffRanks || staffRanks.length === 0) {
-      writeFile('staff_ranks', [
-        {
-          id: 1,
-          name: 'Helper',
-          description: 'Entry-level staff position. Help players and moderate chat.',
-          questions: [
-            { question: 'Why do you want to be a Helper?', required: true },
-            { question: 'Do you have any previous staff experience?', required: true },
-            { question: 'How many hours per week can you dedicate?', required: true }
-          ],
-          open: 1,
-          order_index: 0
-        },
-        {
-          id: 2,
-          name: 'Moderator',
-          description: 'Moderate the server and handle player disputes.',
-          questions: [
-            { question: 'Why do you want to be a Moderator?', required: true },
-            { question: 'Describe your moderation experience.', required: true },
-            { question: 'How would you handle a difficult player situation?', required: true },
-            { question: 'What makes you qualified for this position?', required: true }
-          ],
-          open: 1,
-          order_index: 1
-        },
-        {
-          id: 3,
-          name: 'Admin',
-          description: 'Senior staff position with administrative responsibilities.',
-          questions: [
-            { question: 'Why do you want to be an Admin?', required: true },
-            { question: 'Describe your leadership experience.', required: true },
-            { question: 'How would you improve the server?', required: true },
-            { question: 'What is your long-term vision for AetherGens?', required: true },
-            { question: 'Have you managed a team before?', required: true }
-          ],
-          open: 0,
-          order_index: 2
-        },
-        {
-          id: 4,
-          name: 'Manager',
-          description: 'Highest staff position. Oversee all server operations.',
-          questions: [
-            { question: 'Why do you want to be a Manager?', required: true },
-            { question: 'Describe your management experience.', required: true },
-            { question: 'How would you lead the staff team?', required: true },
-            { question: 'What is your strategic vision for the server?', required: true },
-            { question: 'How would you handle conflicts within the staff team?', required: true },
-            { question: 'What changes would you implement?', required: true }
-          ],
-          open: 0,
-          order_index: 3
-        }
-      ])
-    }
-  } catch (err) {
-    console.error('Error initializing staff ranks:', err)
-  }
-
-  console.log('JSON database initialized successfully')
 }
 
 // Server Info
-export function getServerInfo() {
-  return new Promise((resolve) => {
-    const data = readFile('server_info')
-    const info = data[0] || {}
-    resolve({
-      onlinePlayers: info.online_players || 0,
-      version: info.version || '1.20+',
-      description: info.description || '',
-      serverIp: info.server_ip || 'play.aethergens.com'
-    })
-  })
+export async function getServerInfo() {
+  const database = getDatabase()
+  const row = await dbGet(database, 'SELECT * FROM server_info ORDER BY id DESC LIMIT 1')
+  if (!row) {
+    return { onlinePlayers: 0, version: '1.20+', description: '', serverIp: 'play.aethergens.com' }
+  }
+  return {
+    onlinePlayers: row.online_players || 0,
+    version: row.version || '1.20+',
+    description: row.description || '',
+    serverIp: row.server_ip || 'play.aethergens.com'
+  }
 }
 
-export function updateServerInfo(onlinePlayers, version, description, serverIp) {
-  const data = readFile('server_info')
-  if (data.length > 0) {
-    data[0].online_players = onlinePlayers
-    data[0].version = version
-    data[0].description = description
-    data[0].server_ip = serverIp
-    data[0].updated_at = new Date().toISOString()
-  } else {
-    data.push({
-      id: 1,
-      online_players: onlinePlayers,
-      version: version,
-      description: description,
-      server_ip: serverIp,
-      updated_at: new Date().toISOString()
-    })
-  }
-  writeFile('server_info', data)
+export async function updateServerInfo(info) {
+  const database = getDatabase()
+  await dbRun(database, `UPDATE server_info SET 
+    online_players = ?, 
+    version = ?, 
+    description = ?, 
+    server_ip = ?,
+    updated_at = CURRENT_TIMESTAMP
+    WHERE id = (SELECT id FROM server_info ORDER BY id DESC LIMIT 1)`,
+    [info.onlinePlayers || 0, info.version || '1.20+', info.description || '', info.serverIp || 'play.aethergens.com'])
 }
 
 // News
-export function getAllNews() {
-  return new Promise((resolve) => {
-    const data = readFile('news')
-    resolve(data.filter(item => item.published === 1).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
-  })
+export async function getAllNews() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM news ORDER BY created_at DESC')
 }
 
-export function getNewsById(id) {
-  return new Promise((resolve) => {
-    const data = readFile('news')
-    resolve(data.find(item => item.id === parseInt(id)))
-  })
+export async function getNewsById(id) {
+  const database = getDatabase()
+  return await dbGet(database, 'SELECT * FROM news WHERE id = ?', [id])
 }
 
-export function createNews(title, content, author, imageUrl, published) {
-  return new Promise((resolve) => {
-    const data = readFile('news')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      title,
-      content,
-      author: author || 'Admin',
-      image_url: imageUrl || '',
-      published: published !== undefined ? (published ? 1 : 0) : 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('news', data)
-    resolve(newId)
-  })
+export async function createNews(news) {
+  const database = getDatabase()
+  const result = await dbRun(database, 
+    'INSERT INTO news (title, content, author) VALUES (?, ?, ?)',
+    [news.title, news.content, news.author || 'Admin'])
+  return result.lastID
 }
 
-export function updateNews(id, title, content, author, imageUrl, published) {
-  return new Promise((resolve) => {
-    const data = readFile('news')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        title,
-        content,
-        author,
-        image_url: imageUrl,
-        published: published !== undefined ? (published ? 1 : 0) : 1,
-        updated_at: new Date().toISOString()
-      }
-      writeFile('news', data)
-    }
-    resolve()
-  })
+export async function updateNews(id, news) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE news SET title = ?, content = ?, author = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [news.title, news.content, news.author || 'Admin', id])
 }
 
-export function deleteNews(id) {
-  return new Promise((resolve) => {
-    const data = readFile('news')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('news', filtered)
-    resolve()
-  })
+export async function deleteNews(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM news WHERE id = ?', [id])
 }
 
 // Changelog
-export function getAllChangelog() {
-  return new Promise((resolve) => {
-    const data = readFile('changelog')
-    resolve(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
-  })
+export async function getAllChangelog() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM changelog ORDER BY date DESC')
 }
 
-export function createChangelog(version, title, description, type) {
-  return new Promise((resolve) => {
-    const data = readFile('changelog')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      version,
-      title,
-      description,
-      type: type || 'update',
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('changelog', data)
-    resolve(newId)
-  })
+export async function createChangelog(changelog) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO changelog (version, changes) VALUES (?, ?)',
+    [changelog.version, changelog.changes])
+  return result.lastID
 }
 
-export function updateChangelog(id, version, title, description, type) {
-  return new Promise((resolve) => {
-    const data = readFile('changelog')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        version,
-        title,
-        description,
-        type: type || 'update'
-      }
-      writeFile('changelog', data)
-    }
-    resolve()
-  })
+export async function updateChangelog(id, changelog) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE changelog SET version = ?, changes = ? WHERE id = ?',
+    [changelog.version, changelog.changes, id])
 }
 
-export function deleteChangelog(id) {
-  return new Promise((resolve) => {
-    const data = readFile('changelog')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('changelog', filtered)
-    resolve()
-  })
+export async function deleteChangelog(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM changelog WHERE id = ?', [id])
 }
 
 // Gallery
-export function getAllGallery() {
-  return new Promise((resolve) => {
-    const data = readFile('gallery')
-    resolve(data.sort((a, b) => {
-      if (b.featured !== a.featured) return b.featured - a.featured
-      return new Date(b.created_at) - new Date(a.created_at)
-    }))
-  })
+export async function getAllGallery() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM gallery ORDER BY created_at DESC')
 }
 
-export function createGalleryItem(title, imageUrl, description, category, featured) {
-  return new Promise((resolve) => {
-    const data = readFile('gallery')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      title,
-      image_url: imageUrl,
-      description: description || '',
-      category: category || 'general',
-      featured: featured ? 1 : 0,
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('gallery', data)
-    resolve(newId)
-  })
+export async function createGalleryItem(item) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO gallery (title, image_url, description) VALUES (?, ?, ?)',
+    [item.title, item.imageUrl, item.description || ''])
+  return result.lastID
 }
 
-export function updateGalleryItem(id, title, imageUrl, description, category, featured) {
-  return new Promise((resolve) => {
-    const data = readFile('gallery')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        title,
-        image_url: imageUrl,
-        description,
-        category,
-        featured: featured ? 1 : 0
-      }
-      writeFile('gallery', data)
-    }
-    resolve()
-  })
+export async function updateGalleryItem(id, item) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE gallery SET title = ?, image_url = ?, description = ? WHERE id = ?',
+    [item.title, item.imageUrl, item.description || '', id])
 }
 
-export function deleteGalleryItem(id) {
-  return new Promise((resolve) => {
-    const data = readFile('gallery')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('gallery', filtered)
-    resolve()
-  })
+export async function deleteGalleryItem(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM gallery WHERE id = ?', [id])
 }
 
-// Shop
-export function getAllShopItems() {
-  return new Promise((resolve) => {
-    const data = readFile('shop_items')
-    const filtered = data.filter(item => item.active === 1)
-    resolve(filtered.sort((a, b) => {
-      if (b.featured !== a.featured) return b.featured - a.featured
-      return a.price - b.price
-    }))
-  })
+// Shop Items
+export async function getAllShopItems() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM shop_items ORDER BY created_at DESC')
 }
 
-export function createShopItem(name, description, price, category, tebexId, imageUrl, featured, active) {
-  return new Promise((resolve) => {
-    const data = readFile('shop_items')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      name,
-      description,
-      price: parseFloat(price),
-      category: category || 'ranks',
-      tebex_id: tebexId || '',
-      image_url: imageUrl || '',
-      featured: featured ? 1 : 0,
-      active: active !== undefined ? (active ? 1 : 0) : 1,
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('shop_items', data)
-    resolve(newId)
-  })
+export async function createShopItem(item) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO shop_items (name, description, price, image_url, tebex_link) VALUES (?, ?, ?, ?, ?)',
+    [item.name, item.description || '', item.price, item.imageUrl || '', item.tebexLink || ''])
+  return result.lastID
 }
 
-export function updateShopItem(id, name, description, price, category, tebexId, imageUrl, featured, active) {
-  return new Promise((resolve) => {
-    const data = readFile('shop_items')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        name,
-        description,
-        price: parseFloat(price),
-        category,
-        tebex_id: tebexId,
-        image_url: imageUrl,
-        featured: featured ? 1 : 0,
-        active: active ? 1 : 0
-      }
-      writeFile('shop_items', data)
-    }
-    resolve()
-  })
+export async function updateShopItem(id, item) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE shop_items SET name = ?, description = ?, price = ?, image_url = ?, tebex_link = ? WHERE id = ?',
+    [item.name, item.description || '', item.price, item.imageUrl || '', item.tebexLink || '', id])
 }
 
-export function deleteShopItem(id) {
-  return new Promise((resolve) => {
-    const data = readFile('shop_items')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('shop_items', filtered)
-    resolve()
-  })
+export async function deleteShopItem(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM shop_items WHERE id = ?', [id])
 }
 
 // Features
-export function getAllFeatures() {
-  return new Promise((resolve) => {
-    const data = readFile('features')
-    resolve(data.sort((a, b) => a.order_index - b.order_index))
-  })
+export async function getAllFeatures() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM features ORDER BY order_index ASC')
 }
 
-export function updateFeatures(features) {
-  return new Promise((resolve) => {
-    const updated = features.map((f, idx) => ({
-      id: f.id || idx + 1,
-      icon: f.icon,
-      title: f.title,
-      description: f.description,
-      order_index: idx,
-      created_at: f.created_at || new Date().toISOString()
-    }))
-    writeFile('features', updated)
-    resolve()
-  })
+export async function updateFeatures(features) {
+  const database = getDatabase()
+  // Delete all and reinsert
+  await dbRun(database, 'DELETE FROM features')
+  for (const feature of features) {
+    await dbRun(database,
+      'INSERT INTO features (title, description, icon, order_index) VALUES (?, ?, ?, ?)',
+      [feature.title, feature.description, feature.icon || '', feature.orderIndex || 0])
+  }
 }
 
 // Rules
-export function getAllRules() {
-  return new Promise((resolve) => {
-    const data = readFile('rules')
-    resolve(data.sort((a, b) => a.order_index - b.order_index))
-  })
+export async function getAllRules() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM rules ORDER BY order_index ASC')
 }
 
-export function updateRules(rules) {
-  return new Promise((resolve) => {
-    const updated = rules.map((r, idx) => ({
-      id: r.id || idx + 1,
-      rule_text: r.ruleText,
-      order_index: idx,
-      created_at: r.created_at || new Date().toISOString()
-    }))
-    writeFile('rules', updated)
-    resolve()
-  })
+export async function updateRules(rules) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM rules')
+  for (const rule of rules) {
+    await dbRun(database,
+      'INSERT INTO rules (rule, description, order_index) VALUES (?, ?, ?)',
+      [rule.rule, rule.description || '', rule.orderIndex || 0])
+  }
 }
 
 // Staff
-export function getAllStaff() {
-  return new Promise((resolve) => {
-    const data = readFile('staff')
-    resolve(data.sort((a, b) => a.order_index - b.order_index))
-  })
+export async function getAllStaff() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM staff ORDER BY order_index ASC')
 }
 
-export function updateStaff(staff) {
-  return new Promise((resolve) => {
-    const updated = staff.map((s, idx) => ({
-      id: s.id || idx + 1,
-      name: s.name,
-      role: s.role,
-      color: s.color,
-      order_index: idx,
-      created_at: s.created_at || new Date().toISOString()
-    }))
-    writeFile('staff', updated)
-    resolve()
-  })
+export async function updateStaff(staff) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM staff')
+  for (const member of staff) {
+    await dbRun(database,
+      'INSERT INTO staff (name, rank, role, avatar_url, order_index) VALUES (?, ?, ?, ?, ?)',
+      [member.name, member.rank, member.role || '', member.avatarUrl || '', member.orderIndex || 0])
+  }
 }
 
 // FAQ
-export function getAllFAQ() {
-  return new Promise((resolve) => {
-    const data = readFile('faq')
-    resolve(data.sort((a, b) => a.order_index - b.order_index))
-  })
+export async function getAllFAQ() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM faq ORDER BY order_index ASC')
 }
 
-export function updateFAQ(faq) {
-  return new Promise((resolve) => {
-    const updated = faq.map((f, idx) => ({
-      id: f.id || idx + 1,
-      question: f.question,
-      answer: f.answer,
-      order_index: idx,
-      created_at: f.created_at || new Date().toISOString()
-    }))
-    writeFile('faq', updated)
-    resolve()
-  })
+export async function updateFAQ(faq) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM faq')
+  for (const item of faq) {
+    await dbRun(database,
+      'INSERT INTO faq (question, answer, order_index) VALUES (?, ?, ?)',
+      [item.question, item.answer, item.orderIndex || 0])
+  }
 }
 
 // Events
-export function getAllEvents() {
-  return new Promise((resolve) => {
-    const data = readFile('events')
-    resolve(data.sort((a, b) => new Date(a.start_date) - new Date(b.start_date)))
-  })
+export async function getAllEvents() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM events ORDER BY date ASC')
 }
 
-export function getEventById(id) {
-  return new Promise((resolve) => {
-    const data = readFile('events')
-    resolve(data.find(item => item.id === parseInt(id)))
-  })
+export async function getEventById(id) {
+  const database = getDatabase()
+  return await dbGet(database, 'SELECT * FROM events WHERE id = ?', [id])
 }
 
-export function createEvent(title, description, startDate, endDate, imageUrl, location, featured) {
-  return new Promise((resolve) => {
-    const data = readFile('events')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      title,
-      description,
-      start_date: startDate,
-      end_date: endDate,
-      image_url: imageUrl || '',
-      location: location || '',
-      featured: featured ? 1 : 0,
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('events', data)
-    resolve(newId)
-  })
+export async function createEvent(event) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO events (title, description, date, location, image_url) VALUES (?, ?, ?, ?, ?)',
+    [event.title, event.description, event.date, event.location || '', event.imageUrl || ''])
+  return result.lastID
 }
 
-export function updateEvent(id, title, description, startDate, endDate, imageUrl, location, featured) {
-  return new Promise((resolve) => {
-    const data = readFile('events')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        title,
-        description,
-        start_date: startDate,
-        end_date: endDate,
-        image_url: imageUrl,
-        location,
-        featured: featured ? 1 : 0
-      }
-      writeFile('events', data)
-    }
-    resolve()
-  })
+export async function updateEvent(id, event) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE events SET title = ?, description = ?, date = ?, location = ?, image_url = ? WHERE id = ?',
+    [event.title, event.description, event.date, event.location || '', event.imageUrl || '', id])
 }
 
-export function deleteEvent(id) {
-  return new Promise((resolve) => {
-    const data = readFile('events')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('events', filtered)
-    resolve()
-  })
-}
-
-// Staff Applications
-export function getAllStaffApplications() {
-  return new Promise((resolve, reject) => {
-    try {
-      const data = readFile('staff_applications')
-      resolve(data.sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at) : new Date(0)
-        const dateB = b.created_at ? new Date(b.created_at) : new Date(0)
-        return dateB - dateA
-      }))
-    } catch (err) {
-      console.error('Error getting staff applications:', err)
-      reject(err)
-    }
-  })
-}
-
-export function getStaffApplicationById(id) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_applications')
-    resolve(data.find(item => item.id === parseInt(id)))
-  })
-}
-
-export function createStaffApplication(name, email, discord, age, experience, why, previousStaff, minecraftUsername, rankId, answers, status) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_applications')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      name,
-      email,
-      discord,
-      age: parseInt(age) || 0,
-      experience,
-      why,
-      previous_staff: previousStaff || '',
-      minecraft_username: minecraftUsername || '',
-      rank_id: parseInt(rankId) || null,
-      answers: answers || {},
-      status: status || 'pending',
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('staff_applications', data)
-    resolve(newId)
-  })
-}
-
-export function updateStaffApplicationStatus(id, status) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_applications')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index].status = status
-      writeFile('staff_applications', data)
-    }
-    resolve()
-  })
-}
-
-export function deleteStaffApplication(id) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_applications')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('staff_applications', filtered)
-    resolve()
-  })
+export async function deleteEvent(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM events WHERE id = ?', [id])
 }
 
 // Staff Ranks
-export function getAllStaffRanks() {
-  return new Promise((resolve, reject) => {
-    try {
-      const data = readFile('staff_ranks')
-      resolve(data.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)))
-    } catch (err) {
-      console.error('Error getting staff ranks:', err)
-      reject(err)
-    }
-  })
+export async function getAllStaffRanks() {
+  const database = getDatabase()
+  const ranks = await dbAll(database, 'SELECT * FROM staff_ranks ORDER BY order_index ASC')
+  return ranks.map(rank => ({
+    id: rank.id,
+    name: rank.name,
+    description: rank.description || '',
+    questions: rank.questions ? JSON.parse(rank.questions) : [],
+    open: rank.open === 1,
+    orderIndex: rank.order_index || 0
+  }))
 }
 
-export function getStaffRankById(id) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_ranks')
-    resolve(data.find(item => item.id === parseInt(id)))
-  })
+export async function getStaffRankById(id) {
+  const database = getDatabase()
+  const rank = await dbGet(database, 'SELECT * FROM staff_ranks WHERE id = ?', [id])
+  if (!rank) return null
+  return {
+    id: rank.id,
+    name: rank.name,
+    description: rank.description || '',
+    questions: rank.questions ? JSON.parse(rank.questions) : [],
+    open: rank.open === 1,
+    orderIndex: rank.order_index || 0
+  }
 }
 
-export function getOpenStaffRanks() {
-  return new Promise((resolve, reject) => {
-    try {
-      const data = readFile('staff_ranks')
-      resolve(data.filter(rank => rank.open === 1).sort((a, b) => (a.order_index || 0) - (b.order_index || 0)))
-    } catch (err) {
-      console.error('Error getting open staff ranks:', err)
-      reject(err)
-    }
-  })
+export async function getOpenStaffRanks() {
+  const database = getDatabase()
+  const ranks = await dbAll(database, 'SELECT * FROM staff_ranks WHERE open = 1 ORDER BY order_index ASC')
+  return ranks.map(rank => ({
+    id: rank.id,
+    name: rank.name,
+    description: rank.description || '',
+    questions: rank.questions ? JSON.parse(rank.questions) : [],
+    open: true,
+    orderIndex: rank.order_index || 0
+  }))
 }
 
-export function createStaffRank(name, description, questions, open, orderIndex) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_ranks')
-    const newId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1
-    const newItem = {
-      id: newId,
-      name,
-      description: description || '',
-      questions: questions || [],
-      open: open ? 1 : 0,
-      order_index: orderIndex || data.length,
-      created_at: new Date().toISOString()
-    }
-    data.push(newItem)
-    writeFile('staff_ranks', data)
-    resolve(newId)
-  })
+export async function createStaffRank(rank) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO staff_ranks (name, description, questions, open, order_index) VALUES (?, ?, ?, ?, ?)',
+    [rank.name, rank.description || '', JSON.stringify(rank.questions || []), rank.open ? 1 : 0, rank.orderIndex || 0])
+  return result.lastID
 }
 
-export function updateStaffRank(id, name, description, questions, open, orderIndex) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_ranks')
-    const index = data.findIndex(item => item.id === parseInt(id))
-    if (index !== -1) {
-      data[index] = {
-        ...data[index],
-        name,
-        description,
-        questions: questions || [],
-        open: open ? 1 : 0,
-        order_index: orderIndex !== undefined ? orderIndex : data[index].order_index
-      }
-      writeFile('staff_ranks', data)
-    }
-    resolve()
-  })
+export async function updateStaffRank(id, rank) {
+  const database = getDatabase()
+  await dbRun(database,
+    'UPDATE staff_ranks SET name = ?, description = ?, questions = ?, open = ?, order_index = ? WHERE id = ?',
+    [rank.name, rank.description || '', JSON.stringify(rank.questions || []), rank.open ? 1 : 0, rank.orderIndex || 0, id])
 }
 
-export function deleteStaffRank(id) {
-  return new Promise((resolve) => {
-    const data = readFile('staff_ranks')
-    const filtered = data.filter(item => item.id !== parseInt(id))
-    writeFile('staff_ranks', filtered)
-    resolve()
-  })
+export async function deleteStaffRank(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM staff_ranks WHERE id = ?', [id])
+}
+
+// Staff Applications
+export async function getAllStaffApplications() {
+  const database = getDatabase()
+  return await dbAll(database, 'SELECT * FROM staff_applications ORDER BY created_at DESC')
+}
+
+export async function getStaffApplicationById(id) {
+  const database = getDatabase()
+  const app = await dbGet(database, 'SELECT * FROM staff_applications WHERE id = ?', [id])
+  if (!app) return null
+  return {
+    id: app.id,
+    rankId: app.rank_id,
+    name: app.name,
+    email: app.email,
+    minecraftUsername: app.minecraft_username,
+    discordUsername: app.discord_username || '',
+    answers: app.answers ? JSON.parse(app.answers) : {},
+    status: app.status || 'pending',
+    createdAt: app.created_at
+  }
+}
+
+export async function createStaffApplication(application) {
+  const database = getDatabase()
+  const result = await dbRun(database,
+    'INSERT INTO staff_applications (rank_id, name, email, minecraft_username, discord_username, answers) VALUES (?, ?, ?, ?, ?, ?)',
+    [application.rankId, application.name, application.email, application.minecraftUsername, application.discordUsername || '', JSON.stringify(application.answers || {})])
+  return result.lastID
+}
+
+export async function updateStaffApplicationStatus(id, status) {
+  const database = getDatabase()
+  await dbRun(database, 'UPDATE staff_applications SET status = ? WHERE id = ?', [status, id])
+}
+
+export async function deleteStaffApplication(id) {
+  const database = getDatabase()
+  await dbRun(database, 'DELETE FROM staff_applications WHERE id = ?', [id])
 }
