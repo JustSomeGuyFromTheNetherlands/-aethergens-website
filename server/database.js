@@ -6,36 +6,40 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Vercel uses /tmp for writable storage, fallback to local data directory
-// Detect Vercel by checking multiple environment variables and path
-const isVercel = process.env.VERCEL || 
-                 process.env.VERCEL_ENV || 
-                 process.env.VERCEL_URL ||
-                 __dirname.includes('/var/task') ||
-                 __dirname.includes('/tmp')
+// Detect Vercel/serverless by checking environment variables and path
+const isVercel = !!(process.env.VERCEL || 
+                    process.env.VERCEL_ENV || 
+                    process.env.VERCEL_URL ||
+                    (typeof __dirname === 'string' && __dirname.indexOf('/var/task') !== -1))
 
-const dataDir = isVercel 
-  ? path.join('/tmp', 'aethergens-data')
-  : path.join(__dirname, 'data')
+// Always use /tmp in serverless environments
+let dataDir
+if (isVercel || (typeof __dirname === 'string' && __dirname.indexOf('/var/task') !== -1)) {
+  dataDir = '/tmp/aethergens-data'
+  console.log('🌐 Serverless environment detected - using /tmp for data storage')
+} else {
+  dataDir = path.join(__dirname, 'data')
+}
 
 // Ensure data directory exists - wrap in try-catch for safety
 try {
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true })
+    console.log(`✅ Created data directory: ${dataDir}`)
   }
 } catch (err) {
-  console.error(`Failed to create data directory ${dataDir}:`, err)
-  // Fallback to /tmp if original location fails
-  if (!isVercel && !dataDir.includes('/tmp')) {
-    console.warn('Falling back to /tmp for data storage')
-    const tmpDir = path.join('/tmp', 'aethergens-data')
+  console.error(`❌ Failed to create data directory ${dataDir}:`, err)
+  // Force fallback to /tmp
+  if (dataDir !== '/tmp/aethergens-data') {
+    console.warn('⚠️  Falling back to /tmp for data storage')
+    dataDir = '/tmp/aethergens-data'
     try {
-      if (!fs.existsSync(tmpDir)) {
-        fs.mkdirSync(tmpDir, { recursive: true })
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true })
+        console.log(`✅ Created fallback data directory: ${dataDir}`)
       }
-      // Update dataDir to tmp
-      Object.defineProperty(module.exports || {}, 'dataDir', { value: tmpDir, writable: false })
     } catch (tmpErr) {
-      console.error('Failed to create /tmp directory:', tmpErr)
+      console.error('❌ Failed to create /tmp directory:', tmpErr)
     }
   }
 }
