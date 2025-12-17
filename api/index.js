@@ -22,10 +22,15 @@ app.use(cors())
 app.use(express.json())
 
 // Initialize database
+let dbInitialized = false
 try {
   initDatabase()
+  dbInitialized = true
+  console.log('✅ Database initialized successfully')
 } catch (err) {
-  console.error('Database initialization error:', err)
+  console.error('❌ Database initialization error:', err)
+  console.error('Stack:', err.stack)
+  // Continue anyway - functions will return empty arrays
 }
 
 // Initialize Mailjet

@@ -15,12 +15,15 @@ if (!fs.existsSync(dataDir)) {
 const getFilePath = (table) => path.join(dataDir, `${table}.json`)
 
 const readFile = (table) => {
-  const filePath = getFilePath(table)
-  if (!fs.existsSync(filePath)) {
-    return []
-  }
   try {
+    const filePath = getFilePath(table)
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
     const data = fs.readFileSync(filePath, 'utf8')
+    if (!data || data.trim() === '') {
+      return []
+    }
     return JSON.parse(data)
   } catch (err) {
     console.error(`Error reading ${table}:`, err)
