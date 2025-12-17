@@ -1,51 +1,62 @@
 # AetherGens Website
 
-Minecraft server website voor AetherGens met admin panel.
+A modern, responsive website for the AetherGens Minecraft server built with React and Tailwind CSS.
 
-## GitHub Setup
+## Quick Install (VPS)
 
-Zie [GITHUB.md](GITHUB.md) voor instructies om dit project naar GitHub te pushen.
-
-## Local Development
-
-### Installatie
+**One-line install:**
 ```bash
-npm install
+curl -fsSL https://raw.githubusercontent.com/JustSomeGuyFromTheNetherlands/-aethergens-website/main/install.sh | bash
+cd aethergens-website
+nano .env  # Edit configuration
+./start.sh  # Start server
 ```
 
-### Starten
-**Start beide servers tegelijk:**
+**Or manually:**
 ```bash
-npm start
-```
-
-Of start ze apart:
-- Terminal 1 - Frontend: `npm run dev`
-- Terminal 2 - Backend: `npm run server`
-
-## VPS Deployment
-
-Zie [DEPLOY.md](DEPLOY.md) voor volledige deployment instructies.
-
-**Quick deploy:**
-```bash
+git clone https://github.com/JustSomeGuyFromTheNetherlands/-aethergens-website.git
+cd aethergens-website
 chmod +x install.sh
 ./install.sh
-npm run build
-NODE_ENV=production npm run start:prod
+nano .env
+./start.sh
 ```
 
-Of met PM2:
-```bash
-npm install -g pm2
-pm2 start ecosystem.config.js
-```
+## Features
+
+- Modern, responsive design
+- Admin panel for content management
+- Dynamic content loading
+- Server information display
+- News and changelog sections
+- Gallery
+- Shop integration
+- Staff management
+- FAQ section
+- Events system
+- Staff applications
+
+## Installation
+
+1. Clone the repository: `git clone https://github.com/JustSomeGuyFromTheNetherlands/-aethergens-website.git`
+2. Run install script: `./install.sh`
+3. Configure: Edit `.env` file
+4. Start server: `./start.sh` or `npm run start:prod`
+
+## Development
+
+Run `npm start` to start both frontend and backend servers simultaneously.
+
+## Production Deployment
+
+See `DEPLOY.md` for VPS deployment instructions.
+See `DOCKER.md` for Docker deployment.
+See `PTERODACTYL.md` for Pterodactyl panel deployment.
 
 ## Admin Panel
 
-Ga naar `/admin` en gebruik het wachtwoord: `ik hou van kaas`
+Go to `/admin` and use password: `ik hou van kaas`
 
 ## Data Storage
 
-Data wordt opgeslagen in JSON bestanden in `server/data/` directory.
-
+Data is stored in JSON files in `server/data/` directory.
