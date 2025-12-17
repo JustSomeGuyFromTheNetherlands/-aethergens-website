@@ -18,7 +18,7 @@ export default function StaffApplication() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    fetch('/api/staff-ranks/open')
+    fetch('/data/staff_ranks.json')
       .then(res => {
         if (!res.ok) {
           console.error('Error fetching ranks:', res.status)
@@ -26,7 +26,11 @@ export default function StaffApplication() {
         }
         return res.json()
       })
-      .then(data => setRanks(data || []))
+      .then(data => {
+        // Filter only open ranks
+        const openRanks = (data || []).filter(rank => rank.open === true || rank.open === 1)
+        setRanks(openRanks)
+      })
       .catch(err => {
         console.error('Error fetching ranks:', err)
         setRanks([])

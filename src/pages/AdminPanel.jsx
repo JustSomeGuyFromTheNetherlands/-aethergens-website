@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { downloadJSON, saveToLocalStorage } from '../utils/jsonStorage.js'
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('server')
@@ -80,18 +81,18 @@ export default function AdminPanel() {
       }
 
       const [server, newsData, changelogData, galleryData, shopData, featuresData, rulesData, staffData, faqData, eventsData, applicationsData, ranksData] = await Promise.all([
-        fetchWithErrorHandling('/api/server-info', {}),
-        fetchWithErrorHandling('/api/news', []),
-        fetchWithErrorHandling('/api/changelog', []),
-        fetchWithErrorHandling('/api/gallery', []),
-        fetchWithErrorHandling('/api/shop', []),
-        fetchWithErrorHandling('/api/features', []),
-        fetchWithErrorHandling('/api/rules', []),
-        fetchWithErrorHandling('/api/staff', []),
-        fetchWithErrorHandling('/api/faq', []),
-        fetchWithErrorHandling('/api/events', []),
-        fetchWithErrorHandling('/api/staff-applications', []),
-        fetchWithErrorHandling('/api/staff-ranks', []),
+        fetchWithErrorHandling('/data/server_info.json', {}),
+        fetchWithErrorHandling('/data/news.json', []),
+        fetchWithErrorHandling('/data/changelog.json', []),
+        fetchWithErrorHandling('/data/gallery.json', []),
+        fetchWithErrorHandling('/data/shop_items.json', []),
+        fetchWithErrorHandling('/data/features.json', []),
+        fetchWithErrorHandling('/data/rules.json', []),
+        fetchWithErrorHandling('/data/staff.json', []),
+        fetchWithErrorHandling('/data/faq.json', []),
+        fetchWithErrorHandling('/data/events.json', []),
+        fetchWithErrorHandling('/data/staff_applications.json', []),
+        fetchWithErrorHandling('/data/staff_ranks.json', []),
       ])
       setServerInfo(server)
       setNews(newsData || [])
@@ -116,22 +117,11 @@ export default function AdminPanel() {
   }
 
   // Server Info
-  const saveServerInfo = async () => {
-    try {
-      const res = await fetch('/api/server-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(serverInfo)
-      })
-      if (res.ok) {
-        showSaved()
-      } else {
-        alert('Error saving server info')
-      }
-    } catch (err) {
-      console.error('Error saving server info:', err)
-      alert('Error saving server info')
-    }
+  const saveServerInfo = () => {
+    saveToLocalStorage('server_info', serverInfo)
+    downloadJSON(serverInfo, 'server_info.json')
+    showSaved()
+    alert('✅ Server info saved! Download the JSON file and upload it to /public/data/server_info.json')
   }
 
   // News
@@ -179,135 +169,96 @@ export default function AdminPanel() {
   }
 
   // Changelog
-  const saveChangelog = async () => {
-    try {
-      if (!changelogForm.version || !changelogForm.title || !changelogForm.description) {
-        alert('Please fill in all required fields')
-        return
-      }
-      const url = editingChangelog ? `/api/changelog/${editingChangelog.id}` : '/api/changelog'
-      const method = editingChangelog ? 'PUT' : 'POST'
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(changelogForm)
-      })
-      if (res.ok) {
-        await loadAllData()
-        setChangelogForm({ version: '', title: '', description: '', type: 'update' })
-        setEditingChangelog(null)
-        showSaved()
-      } else {
-        alert('Error saving changelog')
-      }
-    } catch (err) {
-      console.error('Error saving changelog:', err)
-      alert('Error saving changelog')
+  const saveChangelog = () => {
+    if (!changelogForm.version || !changelogForm.changes) {
+      alert('Please fill in version and changes')
+      return
     }
+    let updatedChangelog = [...changelog]
+    if (editingChangelog) {
+      updatedChangelog = updatedChangelog.map(item => item.id === editingChangelog.id ? { ...changelogForm, id: editingChangelog.id } : item)
+    } else {
+      updatedChangelog.push({ ...changelogForm, id: Date.now() })
+    }
+    setChangelog(updatedChangelog)
+    saveToLocalStorage('changelog', updatedChangelog)
+    downloadJSON(updatedChangelog, 'changelog.json')
+    setChangelogForm({ version: '', changes: '' })
+    setEditingChangelog(null)
+    showSaved()
+    alert('✅ Changelog saved! Download the JSON file and upload it to /public/data/changelog.json')
   }
 
-  const deleteChangelog = async (id) => {
+  const deleteChangelog = (id) => {
     if (!confirm('Are you sure you want to delete this changelog entry?')) return
-    try {
-      const res = await fetch(`/api/changelog/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error deleting changelog')
-      }
-    } catch (err) {
-      console.error('Error deleting changelog:', err)
-      alert('Error deleting changelog')
-    }
+    const updatedChangelog = changelog.filter(item => item.id !== id)
+    setChangelog(updatedChangelog)
+    saveToLocalStorage('changelog', updatedChangelog)
+    downloadJSON(updatedChangelog, 'changelog.json')
+    showSaved()
+    alert('✅ Changelog deleted! Download the JSON file and upload it to /public/data/changelog.json')
   }
 
   // Gallery
-  const saveGallery = async () => {
-    try {
-      if (!galleryForm.title || !galleryForm.imageUrl) {
-        alert('Please fill in title and image URL')
-        return
-      }
-      const url = editingGallery ? `/api/gallery/${editingGallery.id}` : '/api/gallery'
-      const method = editingGallery ? 'PUT' : 'POST'
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...galleryForm, featured: galleryForm.featured ? 1 : 0 })
-      })
-      if (res.ok) {
-        await loadAllData()
-        setGalleryForm({ title: '', imageUrl: '', description: '', category: 'general', featured: false })
-        setEditingGallery(null)
-        showSaved()
-      } else {
-        alert('Error saving gallery item')
-      }
-    } catch (err) {
-      console.error('Error saving gallery:', err)
-      alert('Error saving gallery item')
+  const saveGallery = () => {
+    if (!galleryForm.title || !galleryForm.imageUrl) {
+      alert('Please fill in title and image URL')
+      return
     }
+    let updatedGallery = [...gallery]
+    if (editingGallery) {
+      updatedGallery = updatedGallery.map(item => item.id === editingGallery.id ? { ...galleryForm, id: editingGallery.id } : item)
+    } else {
+      updatedGallery.push({ ...galleryForm, id: Date.now() })
+    }
+    setGallery(updatedGallery)
+    saveToLocalStorage('gallery', updatedGallery)
+    downloadJSON(updatedGallery, 'gallery.json')
+    setGalleryForm({ title: '', imageUrl: '', description: '', category: 'general', featured: false })
+    setEditingGallery(null)
+    showSaved()
+    alert('✅ Gallery item saved! Download the JSON file and upload it to /public/data/gallery.json')
   }
 
-  const deleteGallery = async (id) => {
+  const deleteGallery = (id) => {
     if (!confirm('Are you sure you want to delete this gallery item?')) return
-    try {
-      const res = await fetch(`/api/gallery/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error deleting gallery item')
-      }
-    } catch (err) {
-      console.error('Error deleting gallery:', err)
-      alert('Error deleting gallery item')
-    }
+    const updatedGallery = gallery.filter(item => item.id !== id)
+    setGallery(updatedGallery)
+    saveToLocalStorage('gallery', updatedGallery)
+    downloadJSON(updatedGallery, 'gallery.json')
+    showSaved()
+    alert('✅ Gallery item deleted! Download the JSON file and upload it to /public/data/gallery.json')
   }
 
   // Shop
-  const saveShop = async () => {
-    try {
-      if (!shopForm.name || !shopForm.description || !shopForm.price) {
-        alert('Please fill in name, description, and price')
-        return
-      }
-      const url = editingShop ? `/api/shop/${editingShop.id}` : '/api/shop'
-      const method = editingShop ? 'PUT' : 'POST'
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...shopForm, price: parseFloat(shopForm.price), featured: shopForm.featured ? 1 : 0, active: shopForm.active ? 1 : 0 })
-      })
-      if (res.ok) {
-        await loadAllData()
-        setShopForm({ name: '', description: '', price: '', category: 'ranks', tebexId: '', imageUrl: '', featured: false, active: true })
-        setEditingShop(null)
-        showSaved()
-      } else {
-        alert('Error saving shop item')
-      }
-    } catch (err) {
-      console.error('Error saving shop:', err)
-      alert('Error saving shop item')
+  const saveShop = () => {
+    if (!shopForm.name || !shopForm.price) {
+      alert('Please fill in name and price')
+      return
     }
+    let updatedShop = [...shopItems]
+    if (editingShop) {
+      updatedShop = updatedShop.map(item => item.id === editingShop.id ? { ...shopForm, id: editingShop.id, price: parseFloat(shopForm.price) } : item)
+    } else {
+      updatedShop.push({ ...shopForm, id: Date.now(), price: parseFloat(shopForm.price) })
+    }
+    setShopItems(updatedShop)
+    saveToLocalStorage('shop_items', updatedShop)
+    downloadJSON(updatedShop, 'shop_items.json')
+    setShopForm({ name: '', description: '', price: '', category: 'ranks', tebexId: '', imageUrl: '', featured: false, active: true })
+    setEditingShop(null)
+    showSaved()
+    alert('✅ Shop item saved! Download the JSON file and upload it to /public/data/shop_items.json')
   }
 
-  const deleteShop = async (id) => {
+  const deleteShop = (id) => {
     if (!confirm('Are you sure you want to delete this shop item?')) return
-    try {
-      const res = await fetch(`/api/shop/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error deleting shop item')
-      }
-    } catch (err) {
-      console.error('Error deleting shop:', err)
-      alert('Error deleting shop item')
-    }
+    const updatedShop = shopItems.filter(item => item.id !== id)
+    setShopItems(updatedShop)
+    saveToLocalStorage('shop_items', updatedShop)
+    downloadJSON(updatedShop, 'shop_items.json')
+    showSaved()
+    alert('✅ Shop item deleted! Download the JSON file and upload it to /public/data/shop_items.json')
   }
 
   // Features
@@ -322,23 +273,11 @@ export default function AdminPanel() {
     setFeatures(features.filter((_, i) => i !== idx))
   }
 
-  const saveFeatures = async () => {
-    try {
-      const res = await fetch('/api/features', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(features)
-      })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error saving features')
-      }
-    } catch (err) {
-      console.error('Error saving features:', err)
-      alert('Error saving features')
-    }
+  const saveFeatures = () => {
+    saveToLocalStorage('features', features)
+    downloadJSON(features, 'features.json')
+    showSaved()
+    alert('✅ Features saved! Download the JSON file and upload it to /public/data/features.json')
   }
 
   // Rules
@@ -353,23 +292,11 @@ export default function AdminPanel() {
     setRules(rules.filter((_, i) => i !== idx))
   }
 
-  const saveRules = async () => {
-    try {
-      const res = await fetch('/api/rules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rules)
-      })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error saving rules')
-      }
-    } catch (err) {
-      console.error('Error saving rules:', err)
-      alert('Error saving rules')
-    }
+  const saveRules = () => {
+    saveToLocalStorage('rules', rules)
+    downloadJSON(rules, 'rules.json')
+    showSaved()
+    alert('✅ Rules saved! Download the JSON file and upload it to /public/data/rules.json')
   }
 
   // Staff
@@ -384,23 +311,11 @@ export default function AdminPanel() {
     setStaff(staff.filter((_, i) => i !== idx))
   }
 
-  const saveStaff = async () => {
-    try {
-      const res = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(staff)
-      })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error saving staff')
-      }
-    } catch (err) {
-      console.error('Error saving staff:', err)
-      alert('Error saving staff')
-    }
+  const saveStaff = () => {
+    saveToLocalStorage('staff', staff)
+    downloadJSON(staff, 'staff.json')
+    showSaved()
+    alert('✅ Staff saved! Download the JSON file and upload it to /public/data/staff.json')
   }
 
   // FAQ
@@ -415,23 +330,11 @@ export default function AdminPanel() {
     setFaq(faq.filter((_, i) => i !== idx))
   }
 
-  const saveFAQ = async () => {
-    try {
-      const res = await fetch('/api/faq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(faq)
-      })
-      if (res.ok) {
-        await loadAllData()
-        showSaved()
-      } else {
-        alert('Error saving FAQ')
-      }
-    } catch (err) {
-      console.error('Error saving FAQ:', err)
-      alert('Error saving FAQ')
-    }
+  const saveFAQ = () => {
+    saveToLocalStorage('faq', faq)
+    downloadJSON(faq, 'faq.json')
+    showSaved()
+    alert('✅ FAQ saved! Download the JSON file and upload it to /public/data/faq.json')
   }
 
   const tabs = ['server', 'news', 'changelog', 'gallery', 'shop', 'events', 'features', 'rules', 'staff', 'faq', 'ranks', 'applications']

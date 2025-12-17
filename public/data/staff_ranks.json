@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Helper",
+    "description": "Entry-level staff position. Help players and moderate chat.",
+    "questions": [
+      {
+        "question": "Why do you want to be a Helper?",
+        "required": true
+      },
+      {
+        "question": "Do you have any previous staff experience?",
+        "required": true
+      }
+    ],
+    "open": true,
+    "orderIndex": 0
+  },
+  {
+    "id": 2,
+    "name": "Moderator",
+    "description": "Moderate the server and handle player disputes.",
+    "questions": [
+      {
+        "question": "Why do you want to be a Moderator?",
+        "required": true
+      },
+      {
+        "question": "Describe your moderation experience.",
+        "required": true
+      }
+    ],
+    "open": true,
+    "orderIndex": 1
+  }
+]
+

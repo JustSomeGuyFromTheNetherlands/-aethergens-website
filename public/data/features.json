@@ -1,0 +1,45 @@
+[
+  {
+    "id": 1,
+    "icon": "🏗️",
+    "title": "Custom Generators",
+    "description": "Advanced generator system for unique gameplay",
+    "orderIndex": 0
+  },
+  {
+    "id": 2,
+    "icon": "💰",
+    "title": "Economy System",
+    "description": "Trade, buy, and sell with our robust economy",
+    "orderIndex": 1
+  },
+  {
+    "id": 3,
+    "icon": "🎯",
+    "title": "Quests & Rewards",
+    "description": "Complete quests and earn amazing rewards",
+    "orderIndex": 2
+  },
+  {
+    "id": 4,
+    "icon": "🏠",
+    "title": "Land Protection",
+    "description": "Protect your builds with our land claim system",
+    "orderIndex": 3
+  },
+  {
+    "id": 5,
+    "icon": "🎨",
+    "title": "Custom Items",
+    "description": "Unique items and weapons to discover",
+    "orderIndex": 4
+  },
+  {
+    "id": 6,
+    "icon": "👥",
+    "title": "Active Community",
+    "description": "Join our friendly and welcoming community",
+    "orderIndex": 5
+  }
+]
+

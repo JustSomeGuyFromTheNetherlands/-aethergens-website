@@ -18,16 +18,16 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const [server, features, rules, staff, faq, news, changelog, gallery, shop, events] = await Promise.all([
-          fetch('/api/server-info').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-          fetch('/api/features').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/rules').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/staff').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/faq').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/news').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/changelog').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/gallery').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/shop').then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch('/api/events').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/server_info.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+          fetch('/data/features.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/rules.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/staff.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/faq.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/news.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/changelog.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/gallery.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/shop_items.json').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/data/events.json').then(r => r.ok ? r.json() : []).catch(() => []),
         ])
         setServerInfo(server)
         setFeatures(Array.isArray(features) ? features : [])

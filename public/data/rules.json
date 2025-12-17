@@ -1,0 +1,39 @@
+[
+  {
+    "id": 1,
+    "rule": "No griefing or stealing from other players",
+    "description": "",
+    "orderIndex": 0
+  },
+  {
+    "id": 2,
+    "rule": "Be respectful to all players and staff members",
+    "description": "",
+    "orderIndex": 1
+  },
+  {
+    "id": 3,
+    "rule": "No cheating, hacking, or exploiting glitches",
+    "description": "",
+    "orderIndex": 2
+  },
+  {
+    "id": 4,
+    "rule": "No spamming in chat or advertising other servers",
+    "description": "",
+    "orderIndex": 3
+  },
+  {
+    "id": 5,
+    "rule": "Keep chat appropriate and family-friendly",
+    "description": "",
+    "orderIndex": 4
+  },
+  {
+    "id": 6,
+    "rule": "Follow staff instructions and decisions",
+    "description": "",
+    "orderIndex": 5
+  }
+]
+
