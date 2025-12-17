@@ -68,3 +68,4 @@ Deze worden **NIET** naar GitHub geüpload:
 - Commit regelmatig met duidelijke berichten
 - Gebruik branches voor grote features: `git checkout -b feature-name`
 
+

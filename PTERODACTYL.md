@@ -35,3 +35,4 @@ node server/index.js
 - **Port errors**: Pterodactyl should set `SERVER_PORT` automatically
 - **Frontend not loading**: In production, make sure `npm run build` was run first
 
+
