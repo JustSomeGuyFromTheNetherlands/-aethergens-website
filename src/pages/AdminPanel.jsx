@@ -708,31 +708,24 @@ export default function AdminPanel() {
                   Featured
                 </label>
               </div>
-              <button onClick={async () => {
-                try {
-                  if (!eventForm.title || !eventForm.description || !eventForm.startDate) {
-                    alert('Please fill in title, description, and start date')
-                    return
-                  }
-                  const url = editingEvent ? `/api/events/${editingEvent.id}` : '/api/events'
-                  const method = editingEvent ? 'PUT' : 'POST'
-                  const res = await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(eventForm)
-                  })
-                  if (res.ok) {
-                    await loadAllData()
-                    setEventForm({ title: '', description: '', startDate: '', endDate: '', imageUrl: '', location: '', featured: false })
-                    setEditingEvent(null)
-                    showSaved()
-                  } else {
-                    alert('Error saving event')
-                  }
-                } catch (err) {
-                  console.error('Error saving event:', err)
-                  alert('Error saving event')
+              <button onClick={() => {
+                if (!eventForm.title || !eventForm.description || !eventForm.startDate) {
+                  alert('Please fill in title, description, and start date')
+                  return
                 }
+                let updatedEvents = [...events]
+                if (editingEvent) {
+                  updatedEvents = updatedEvents.map(item => item.id === editingEvent.id ? { ...eventForm, id: editingEvent.id } : item)
+                } else {
+                  updatedEvents.push({ ...eventForm, id: Date.now() })
+                }
+                setEvents(updatedEvents)
+                saveToLocalStorage('events', updatedEvents)
+                downloadJSON(updatedEvents, 'events.json')
+                setEventForm({ title: '', description: '', startDate: '', endDate: '', imageUrl: '', location: '', featured: false })
+                setEditingEvent(null)
+                showSaved()
+                alert('✅ Event saved! Download the JSON file and upload it to /public/data/events.json')
               }} className="px-6 py-2 rounded-md text-white font-medium" style={{ backgroundColor: '#1565C0' }}>
                 {editingEvent ? 'Update' : 'Add'} Event
               </button>
@@ -748,20 +741,14 @@ export default function AdminPanel() {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => { setEditingEvent(event); setEventForm({ title: event.title, description: event.description, startDate: event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : '', endDate: event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : '', imageUrl: event.image_url || '', location: event.location || '', featured: event.featured === 1 }) }} className="text-blue-600 text-sm">Edit</button>
-                        <button onClick={async () => {
+                        <button onClick={() => {
                           if (!confirm('Are you sure you want to delete this event?')) return
-                          try {
-                            const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' })
-                            if (res.ok) {
-                              await loadAllData()
-                              showSaved()
-                            } else {
-                              alert('Error deleting event')
-                            }
-                          } catch (err) {
-                            console.error('Error deleting event:', err)
-                            alert('Error deleting event')
-                          }
+                          const updatedEvents = events.filter(item => item.id !== event.id)
+                          setEvents(updatedEvents)
+                          saveToLocalStorage('events', updatedEvents)
+                          downloadJSON(updatedEvents, 'events.json')
+                          showSaved()
+                          alert('✅ Event deleted! Download the JSON file and upload it to /public/data/events.json')
                         }} className="text-red-600 text-sm">Delete</button>
                       </div>
                     </div>
@@ -814,31 +801,24 @@ export default function AdminPanel() {
                   ))}
                 </div>
               </div>
-              <button onClick={async () => {
-                try {
-                  if (!rankForm.name) {
-                    alert('Please enter a rank name')
-                    return
-                  }
-                  const url = editingRank ? `/api/staff-ranks/${editingRank.id}` : '/api/staff-ranks'
-                  const method = editingRank ? 'PUT' : 'POST'
-                  const res = await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...rankForm, orderIndex: editingRank ? editingRank.order_index : (staffRanks?.length || 0) })
-                  })
-                  if (res.ok) {
-                    await loadAllData()
-                    setRankForm({ name: '', description: '', questions: [], open: true })
-                    setEditingRank(null)
-                    showSaved()
-                  } else {
-                    alert('Error saving rank')
-                  }
-                } catch (err) {
-                  console.error('Error saving rank:', err)
-                  alert('Error saving rank')
+              <button onClick={() => {
+                if (!rankForm.name) {
+                  alert('Please enter a rank name')
+                  return
                 }
+                let updatedRanks = [...staffRanks]
+                if (editingRank) {
+                  updatedRanks = updatedRanks.map(item => item.id === editingRank.id ? { ...rankForm, id: editingRank.id, orderIndex: editingRank.order_index || (staffRanks?.length || 0) } : item)
+                } else {
+                  updatedRanks.push({ ...rankForm, id: Date.now(), orderIndex: staffRanks?.length || 0 })
+                }
+                setStaffRanks(updatedRanks)
+                saveToLocalStorage('staff_ranks', updatedRanks)
+                downloadJSON(updatedRanks, 'staff_ranks.json')
+                setRankForm({ name: '', description: '', questions: [], open: true })
+                setEditingRank(null)
+                showSaved()
+                alert('✅ Rank saved! Download the JSON file and upload it to /public/data/staff_ranks.json')
               }} className="px-6 py-2 rounded-md text-white font-medium" style={{ backgroundColor: '#1565C0' }}>
                 {editingRank ? 'Update' : 'Add'} Rank
               </button>
@@ -861,20 +841,14 @@ export default function AdminPanel() {
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => { setEditingRank(rank); setRankForm({ name: rank.name || '', description: rank.description || '', questions: Array.isArray(rank.questions) ? rank.questions : [], open: rank.open === 1 }) }} className="text-blue-600 text-sm">Edit</button>
-                        <button onClick={async () => {
+                        <button onClick={() => {
                           if (!confirm('Are you sure you want to delete this rank?')) return
-                          try {
-                            const res = await fetch(`/api/staff-ranks/${rank.id}`, { method: 'DELETE' })
-                            if (res.ok) {
-                              await loadAllData()
-                              showSaved()
-                            } else {
-                              alert('Error deleting rank')
-                            }
-                          } catch (err) {
-                            console.error('Error deleting rank:', err)
-                            alert('Error deleting rank')
-                          }
+                          const updatedRanks = staffRanks.filter(item => item.id !== rank.id)
+                          setStaffRanks(updatedRanks)
+                          saveToLocalStorage('staff_ranks', updatedRanks)
+                          downloadJSON(updatedRanks, 'staff_ranks.json')
+                          showSaved()
+                          alert('✅ Rank deleted! Download the JSON file and upload it to /public/data/staff_ranks.json')
                         }} className="text-red-600 text-sm">Delete</button>
                       </div>
                     </div>
@@ -910,48 +884,30 @@ export default function AdminPanel() {
                         <p className="text-sm text-gray-600">Status: <span className={`font-semibold ${app.status === 'accepted' ? 'text-green-600' : app.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}`}>{app.status}</span></p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={async () => {
-                          try {
-                            const res = await fetch(`/api/staff-applications/${app.id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'accepted' }) })
-                            if (res.ok) {
-                              await loadAllData()
-                              showSaved()
-                            } else {
-                              alert('Error updating application')
-                            }
-                          } catch (err) {
-                            console.error('Error accepting application:', err)
-                            alert('Error accepting application')
-                          }
+                        <button onClick={() => {
+                          const updatedApps = staffApplications.map(item => item.id === app.id ? { ...item, status: 'accepted' } : item)
+                          setStaffApplications(updatedApps)
+                          saveToLocalStorage('staff_applications', updatedApps)
+                          downloadJSON(updatedApps, 'staff_applications.json')
+                          showSaved()
+                          alert('✅ Application accepted! Download the JSON file and upload it to /public/data/staff_applications.json')
                         }} className="px-4 py-2 rounded-md text-white text-sm font-medium" style={{ backgroundColor: '#16A34A' }}>Accept</button>
-                        <button onClick={async () => {
-                          try {
-                            const res = await fetch(`/api/staff-applications/${app.id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'rejected' }) })
-                            if (res.ok) {
-                              await loadAllData()
-                              showSaved()
-                            } else {
-                              alert('Error updating application')
-                            }
-                          } catch (err) {
-                            console.error('Error rejecting application:', err)
-                            alert('Error rejecting application')
-                          }
+                        <button onClick={() => {
+                          const updatedApps = staffApplications.map(item => item.id === app.id ? { ...item, status: 'rejected' } : item)
+                          setStaffApplications(updatedApps)
+                          saveToLocalStorage('staff_applications', updatedApps)
+                          downloadJSON(updatedApps, 'staff_applications.json')
+                          showSaved()
+                          alert('✅ Application rejected! Download the JSON file and upload it to /public/data/staff_applications.json')
                         }} className="px-4 py-2 rounded-md text-white text-sm font-medium" style={{ backgroundColor: '#DC2626' }}>Reject</button>
-                        <button onClick={async () => {
+                        <button onClick={() => {
                           if (!confirm('Are you sure you want to delete this application?')) return
-                          try {
-                            const res = await fetch(`/api/staff-applications/${app.id}`, { method: 'DELETE' })
-                            if (res.ok) {
-                              await loadAllData()
-                              showSaved()
-                            } else {
-                              alert('Error deleting application')
-                            }
-                          } catch (err) {
-                            console.error('Error deleting application:', err)
-                            alert('Error deleting application')
-                          }
+                          const updatedApps = staffApplications.filter(item => item.id !== app.id)
+                          setStaffApplications(updatedApps)
+                          saveToLocalStorage('staff_applications', updatedApps)
+                          downloadJSON(updatedApps, 'staff_applications.json')
+                          showSaved()
+                          alert('✅ Application deleted! Download the JSON file and upload it to /public/data/staff_applications.json')
                         }} className="px-4 py-2 rounded-md border border-gray-300 text-sm">Delete</button>
                       </div>
                     </div>
