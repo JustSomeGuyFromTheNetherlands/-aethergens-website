@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../database');
-const { requireAuth, requireAdmin } = require('../../middleware/auth');
+const { requireAuth } = require('../../middleware/auth');
 const { adminLayout } = require('../../middleware/adminLayout');
 const { validateString, validateDate } = require('../../utils/validation');
 const { logAdminAction } = require('../../utils/adminLogger');
 
 // Apply middleware
-router.use(requireAuth);
-router.use(requireAdmin);
 router.use(adminLayout);
 
 // GET /admin/changelog - List all changelog entries
@@ -109,7 +107,7 @@ router.post('/', async (req, res) => {
     `, [version, title, description || '', release_date, is_major ? 1 : 0]);
 
     // Log action
-    await logAdminAction(req.session.currentUser.id, 'CREATE_CHANGELOG', `Created changelog entry: ${title} (${version})`);
+    await logAdminAction(req.session.currentUser.id, 'CREATE_CHANGELOG', `Created changelog entry: ${title} (${version})`, 'changelog', result.insertId, req.ip);
 
     req.flash('success', 'Changelog entry created successfully');
     res.redirect('/admin/changelog');
@@ -172,7 +170,7 @@ router.post('/:id', async (req, res) => {
     `, [version, title, description || '', release_date, is_major ? 1 : 0, req.params.id]);
 
     // Log action
-    await logAdminAction(req.session.currentUser.id, 'UPDATE_CHANGELOG', `Updated changelog entry ID: ${req.params.id}`);
+    await logAdminAction(req.session.currentUser.id, 'UPDATE_CHANGELOG', `Updated changelog entry ID: ${req.params.id}`, 'changelog', req.params.id, req.ip);
 
     res.json({ success: true, message: 'Changelog entry updated successfully' });
   } catch (error) {
@@ -192,7 +190,7 @@ router.delete('/:id', async (req, res) => {
     await db.query('DELETE FROM changelog WHERE id = ?', [req.params.id]);
 
     // Log action
-    await logAdminAction(req.session.currentUser.id, 'DELETE_CHANGELOG', `Deleted changelog entry: ${entry.title} (${entry.version})`);
+    await logAdminAction(req.session.currentUser.id, 'DELETE_CHANGELOG', `Deleted changelog entry: ${entry.title} (${entry.version})`, 'changelog', req.params.id, req.ip);
 
     res.json({ success: true, message: 'Changelog entry deleted successfully' });
   } catch (error) {

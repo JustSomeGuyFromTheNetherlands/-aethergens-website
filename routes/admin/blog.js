@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../database');
-const { requireAuth, requireAdmin } = require('../../middleware/auth');
+const { requireAuth } = require('../../middleware/auth');
 const { adminLayout } = require('../../middleware/adminLayout');
 const { validateString, validateUrl } = require('../../utils/validation');
 const { logAdminAction } = require('../../utils/adminLogger');
@@ -9,8 +9,6 @@ const path = require('path');
 const fs = require('fs');
 
 // Apply middleware
-router.use(requireAuth);
-router.use(requireAdmin);
 router.use(adminLayout);
 
 // GET /admin/blog - Blog dashboard
@@ -203,7 +201,7 @@ router.post('/posts', async (req, res) => {
     }
 
     // Log action
-    await logAdminAction(req.session.currentUser.id, 'CREATE_BLOG_POST', `Created blog post: ${title}`);
+    await logAdminAction(req.session.currentUser.id, 'CREATE_BLOG_POST', `Created blog post: ${title}`, 'blog_post', result.insertId, req.ip);
 
     req.flash('success', 'Blog post created successfully');
     res.redirect('/admin/blog/posts');
@@ -328,7 +326,7 @@ router.delete('/posts/:id', async (req, res) => {
     await db.query('DELETE FROM blog_posts WHERE id = ?', [req.params.id]);
 
     // Log action
-    await logAdminAction(req.session.currentUser.id, 'DELETE_BLOG_POST', `Deleted blog post: ${post.title}`);
+    await logAdminAction(req.session.currentUser.id, 'DELETE_BLOG_POST', `Deleted blog post: ${post.title}`, 'blog_post', req.params.id, req.ip);
 
     res.json({ success: true, message: 'Blog post deleted successfully' });
   } catch (error) {
