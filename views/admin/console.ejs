@@ -1,0 +1,83 @@
+<%- include('partials/header') %>
+
+<% if (message) { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300"><%= message %></div>
+<% } %>
+
+<% if (error) { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300"><%= error %></div>
+<% } %>
+
+<% if (commandOutput) { %>
+    <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 mb-6">
+        <h4 class="text-white font-semibold mb-2">Command Output:</h4>
+        <pre class="text-slate-300 font-mono text-sm whitespace-pre-wrap"><%= commandOutput %></pre>
+    </div>
+<% } %>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">RCON Settings</h3>
+        <form method="POST" class="card p-6 space-y-4">
+            <input type="hidden" name="action" value="update_settings">
+            <div>
+                <label class="block text-slate-300 mb-2">Host</label>
+                <input type="text" name="rcon_host" value="<%= rconHost %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Port</label>
+                <input type="number" name="rcon_port" value="<%= rconPort %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Password</label>
+                <input type="password" name="rcon_password" value="<%= rconPassword %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <button type="submit" class="btn-primary w-full px-4 py-2 rounded text-white">Save Settings</button>
+        </form>
+        
+        <div class="card p-6 mt-6">
+            <h3 class="text-xl font-bold text-white mb-4">Test Connection</h3>
+            <form method="POST" class="space-y-4">
+                <input type="hidden" name="action" value="test_connection">
+                <div>
+                    <label class="block text-slate-300 mb-2">Test Host</label>
+                    <input type="text" name="test_host" value="<%= rconHost %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-2">Test Port</label>
+                    <input type="number" name="test_port" value="<%= rconPort %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-2">Test Password</label>
+                    <input type="password" name="test_password" value="<%= rconPassword %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                </div>
+                <button type="submit" class="btn-info w-full px-4 py-2 rounded text-white">Test Connection</button>
+            </form>
+        </div>
+    </div>
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">Execute Command</h3>
+        <form method="POST" class="card p-6 space-y-4">
+            <input type="hidden" name="action" value="execute">
+            <div>
+                <label class="block text-slate-300 mb-2">Command</label>
+                <input type="text" name="command" required placeholder="list" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white font-mono">
+            </div>
+            <button type="submit" class="btn-danger w-full px-4 py-2 rounded text-white">Execute</button>
+        </form>
+        
+        <div class="card p-6 mt-6">
+            <h4 class="text-white font-semibold mb-2">Common Commands</h4>
+            <div class="space-y-2 text-sm text-slate-300">
+                <p><code class="bg-slate-800 px-2 py-1 rounded">list</code> - List online players</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">say &lt;message&gt;</code> - Broadcast message</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">kick &lt;player&gt;</code> - Kick player</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">ban &lt;player&gt;</code> - Ban player</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">pardon &lt;player&gt;</code> - Unban player</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

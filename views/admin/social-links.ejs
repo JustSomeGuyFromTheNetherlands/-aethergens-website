@@ -1,0 +1,141 @@
+<%- include('partials/header') %>
+
+<!-- Stats -->
+<div class="card p-6 mb-6 rounded-xl">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Social Links</h2>
+            <p class="text-slate-400 mt-1">Manage social media and external links displayed on your website</p>
+        </div>
+        <button onclick="document.getElementById('addLinkModal').classList.remove('hidden')" class="btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+            <i class="fas fa-plus mr-2"></i>Add Link
+        </button>
+    </div>
+</div>
+
+<!-- Links Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% links.forEach(link => { 
+        const platformInfo = platforms.find(p => p.value === link.platform) || { label: link.platform, icon: 'fas fa-link' };
+    %>
+        <div class="card p-6 rounded-xl border <%= link.active ? 'border-green-500/30' : 'border-slate-700' %>">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <i class="<%= platformInfo.icon %> text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white"><%= platformInfo.label %></h3>
+                        <span class="text-xs <%= link.active ? 'text-green-400' : 'text-slate-500' %>">
+                            <%= link.active ? 'Active' : 'Inactive' %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-slate-400 text-sm mb-4 break-all"><%= link.url %></p>
+            <div class="flex gap-2">
+                <a href="<%= link.url %>" target="_blank" class="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white text-sm text-center">
+                    <i class="fas fa-external-link-alt mr-2"></i>Visit
+                </a>
+                <button onclick="editLink(<%= link.id %>, '<%= link.platform %>', '<%= link.url.replace(/'/g, "\\'") %>', <%= link.active %>)" 
+                        class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this link?');">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="link_id" value="<%= link.id %>">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    <% }); %>
+    
+    <% if (links.length === 0) { %>
+        <div class="col-span-full text-center py-12">
+            <i class="fas fa-link text-6xl text-slate-600 mb-4"></i>
+            <p class="text-xl text-slate-400 mb-2">No social links added</p>
+            <p class="text-slate-500 mb-4">Add your first social media link to get started</p>
+            <button onclick="document.getElementById('addLinkModal').classList.remove('hidden')" class="btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+                <i class="fas fa-plus mr-2"></i>Add Link
+            </button>
+        </div>
+    <% } %>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="addLinkModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-xl p-8 max-w-md w-full border border-purple-500/20">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white" id="modalTitle">Add Social Link</h2>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form method="POST" id="linkForm">
+            <input type="hidden" name="action" id="formAction" value="add">
+            <input type="hidden" name="link_id" id="linkId">
+            
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2 text-sm font-medium">Platform *</label>
+                <select name="platform" id="platformSelect" required
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none">
+                    <option value="">Select platform...</option>
+                    <% platforms.forEach(platform => { %>
+                        <option value="<%= platform.value %>"><%= platform.label %></option>
+                    <% }); %>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2 text-sm font-medium">URL *</label>
+                <input type="url" name="url" id="urlInput" required
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none"
+                       placeholder="https://example.com">
+            </div>
+            
+            <div class="mb-6">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="active" id="activeCheck" checked
+                           class="w-4 h-4 text-purple-600 bg-slate-900 border-slate-700 rounded focus:ring-purple-500">
+                    <span class="text-slate-300 text-sm">Active (visible on website)</span>
+                </label>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+                    <span id="submitText">Add Link</span>
+                </button>
+                <button type="button" onclick="closeModal()" 
+                        class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg text-white font-semibold">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editLink(id, platform, url, active) {
+    document.getElementById('modalTitle').textContent = 'Edit Social Link';
+    document.getElementById('formAction').value = 'update';
+    document.getElementById('linkId').value = id;
+    document.getElementById('platformSelect').value = platform;
+    document.getElementById('urlInput').value = url;
+    document.getElementById('activeCheck').checked = active === 1;
+    document.getElementById('submitText').textContent = 'Update Link';
+    document.getElementById('addLinkModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('addLinkModal').classList.add('hidden');
+    document.getElementById('linkForm').reset();
+    document.getElementById('modalTitle').textContent = 'Add Social Link';
+    document.getElementById('formAction').value = 'add';
+    document.getElementById('submitText').textContent = 'Add Link';
+}
+</script>
+
+<%- include('partials/footer') %>
+

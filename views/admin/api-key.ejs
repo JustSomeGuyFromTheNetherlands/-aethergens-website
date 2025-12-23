@@ -1,0 +1,60 @@
+<%- include('partials/header') %>
+
+<% if (message === 'generated') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">API key generated successfully!</div>
+<% } %>
+
+<div class="card p-6">
+    <h3 class="text-2xl font-bold text-white mb-4">REST API Key</h3>
+    <p class="text-slate-400 mb-6">Generate an API key to access the REST API endpoints. Use this key in the Authorization header or as a query parameter.</p>
+    
+    <% if (apiKey) { %>
+        <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700 mb-4">
+            <label class="block text-slate-300 mb-2 text-sm">API Key</label>
+            <div class="flex gap-2">
+                <input type="text" value="<%= apiKey %>" readonly id="apiKeyInput" class="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 font-mono text-sm text-white">
+                <button onclick="copyApiKey()" class="btn-primary px-4 py-2 rounded text-white">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 mb-4">
+            <h4 class="text-white font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>API Endpoints</h4>
+            <div class="space-y-2 text-sm text-slate-300">
+                <p><code class="bg-slate-800 px-2 py-1 rounded">GET /api/v1/news</code> - Get news articles</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">GET /api/v1/players</code> - Get player list</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">GET /api/v1/bans</code> - Get ban list</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">GET /api/v1/server</code> - Get server status</p>
+                <p><code class="bg-slate-800 px-2 py-1 rounded">GET /api/v1/stats</code> - Get statistics</p>
+            </div>
+            <p class="text-xs text-slate-400 mt-3">Use header: <code>Authorization: Bearer <%= apiKey.substring(0, 20) %>...</code> or query: <code>?api_key=...</code></p>
+        </div>
+    <% } else { %>
+        <p class="text-slate-400 mb-4">No API key generated yet.</p>
+    <% } %>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="generate">
+        <button type="submit" class="btn-primary px-6 py-3 rounded-lg text-white">
+            <i class="fas fa-key mr-2"></i><%= apiKey ? 'Regenerate' : 'Generate' %> API Key
+        </button>
+    </form>
+    
+    <div class="mt-6 bg-yellow-900/30 border border-yellow-500/50 rounded-lg p-4">
+        <h4 class="text-white font-semibold mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Security Note</h4>
+        <p class="text-sm text-slate-300">Keep this API key secret. Anyone with this key can access your database data. Regenerate it if compromised.</p>
+    </div>
+</div>
+
+<script>
+function copyApiKey() {
+    const input = document.getElementById('apiKeyInput');
+    input.select();
+    document.execCommand('copy');
+    alert('API key copied to clipboard!');
+}
+</script>
+
+<%- include('partials/footer') %>
+

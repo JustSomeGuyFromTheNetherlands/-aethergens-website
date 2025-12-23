@@ -1,0 +1,278 @@
+<%- include('partials/header') %>
+
+<!-- Real-Time Server Status Widget -->
+<% if (serverSettings) { %>
+<div class="card p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold text-white flex items-center">
+            <i class="fas fa-server mr-3" style="color: var(--admin-primary);"></i>Server Status
+        </h3>
+        <button onclick="refreshServerStatus()" class="btn-primary px-4 py-2 rounded text-sm text-white">
+            <i class="fas fa-sync-alt mr-2"></i>Refresh
+        </button>
+    </div>
+    <div id="serverStatusWidget">
+        <% if (serverStatus && serverStatus.online) { %>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-green-900/30 border border-green-500/50 rounded-lg p-4">
+                    <p class="text-green-300 text-sm mb-1">Status</p>
+                    <p class="text-2xl font-bold text-green-400">Online</p>
+                </div>
+                <div class="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
+                    <p class="text-blue-300 text-sm mb-1">Players</p>
+                    <p class="text-2xl font-bold text-blue-400"><%= serverStatus.players || 0 %>/<%= serverStatus.max_players || 0 %></p>
+                </div>
+                <div class="bg-purple-900/30 border border-purple-500/50 rounded-lg p-4">
+                    <p class="text-purple-300 text-sm mb-1">Version</p>
+                    <p class="text-xl font-bold text-purple-400"><%= serverStatus.version || 'Unknown' %></p>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                    <p class="text-slate-300 text-sm mb-1">Server</p>
+                    <p class="text-lg font-bold text-white"><%= serverStatus.server_name || 'Unknown' %></p>
+                    <p class="text-xs text-slate-400 mt-1"><%= serverStatus.server_ip || '' %>:<%= serverStatus.server_port || 25565 %></p>
+                </div>
+            </div>
+            <% if (serverStatus.motd) { %>
+                <div class="mt-4 p-3 bg-slate-900/50 rounded border border-slate-700">
+                    <p class="text-slate-300 text-sm"><strong>MOTD:</strong> <%= serverStatus.motd %></p>
+                </div>
+            <% } %>
+        <% } else { %>
+            <div class="bg-red-900/30 border border-red-500/50 rounded-lg p-4">
+                <p class="text-red-300 text-sm mb-1">Status</p>
+                <p class="text-2xl font-bold text-red-400">Offline</p>
+                <% if (serverStatus && serverStatus.error) { %>
+                    <p class="text-sm text-red-300 mt-2"><%= serverStatus.error %></p>
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+</div>
+<% } %>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card p-6 rounded-xl border border-purple-500/20">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Total Players</p>
+                <p class="text-4xl font-black text-white"><%= totalPlayers.toLocaleString() %></p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-users text-white text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card p-6 rounded-xl border border-purple-500/20">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Active Bans</p>
+                <p class="text-4xl font-black text-red-400"><%= totalBans.toLocaleString() %></p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-ban text-white text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card p-6 rounded-xl border border-purple-500/20">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Pending Appeals</p>
+                <p class="text-4xl font-black text-yellow-400"><%= pendingAppeals.toLocaleString() %></p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-gavel text-white text-2xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card p-6 rounded-xl border border-purple-500/20">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Pending Applications</p>
+                <p class="text-4xl font-black text-green-400"><%= pendingApplications.toLocaleString() %></p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-file-alt text-white text-2xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card rounded-xl p-6">
+        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-chart-line mr-3" style="color: var(--admin-primary);"></i>Player Growth
+        </h3>
+        <div class="relative" style="height: 250px;">
+            <canvas id="playerGrowthChart" style="max-width: 100%; max-height: 100%;"></canvas>
+        </div>
+    </div>
+    <div class="card rounded-xl p-6">
+        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-chart-pie mr-3" style="color: var(--admin-primary);"></i>Ban & Appeal Stats
+        </h3>
+        <div class="relative" style="height: 250px;">
+            <canvas id="banAppealChart" style="max-width: 100%; max-height: 100%;"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card rounded-xl p-6">
+        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-newspaper mr-3" style="color: var(--admin-primary);"></i>Recent News
+        </h3>
+        <div class="space-y-3">
+            <% if (!recentNews || recentNews.length === 0) { %>
+                <p class="text-slate-400">No news posts yet.</p>
+            <% } else { %>
+                <% recentNews.forEach(news => { %>
+                    <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700 hover:border-purple-500/50 transition">
+                        <h4 class="font-semibold text-white"><%= news.title %></h4>
+                        <p class="text-sm text-slate-400 mt-1"><%= new Date(news.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></p>
+                        <span class="inline-block mt-2 px-2 py-1 text-xs rounded <%= news.published ? 'bg-green-900/50 text-green-300' : 'bg-yellow-900/50 text-yellow-300' %>">
+                            <%= news.published ? 'Published' : 'Draft' %>
+                        </span>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="card rounded-xl p-6">
+        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-history mr-3" style="color: var(--admin-primary);"></i>Recent Activity
+        </h3>
+        <div class="space-y-3">
+            <% if (!recentLogs || recentLogs.length === 0) { %>
+                <p class="text-slate-400">No activity yet.</p>
+            <% } else { %>
+                <% recentLogs.forEach(log => { %>
+                    <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                        <p class="text-sm text-white"><%= log.action %></p>
+                        <p class="text-xs text-slate-400 mt-1"><%= log.admin %> • <%= new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></p>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const playerGrowthCtx = document.getElementById('playerGrowthChart');
+if (playerGrowthCtx) {
+    const labels = <%= JSON.stringify(playerGrowth.map(p => p.date)) %>;
+    const data = <%= JSON.stringify(playerGrowth.map(p => p.count)) %>;
+    new Chart(playerGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Total Players',
+                data: data,
+                borderColor: 'rgb(139, 92, 246)',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#e2e8f0' }
+                }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }
+            }
+        }
+    });
+}
+
+const banAppealCtx = document.getElementById('banAppealChart');
+if (banAppealCtx) {
+    new Chart(banAppealCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active Bans', 'Pending Appeals', 'Pending Applications'],
+            datasets: [{
+                data: [<%= totalBans %>, <%= pendingAppeals %>, <%= pendingApplications %>],
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(16, 185, 129, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(239, 68, 68)',
+                    'rgb(245, 158, 11)',
+                    'rgb(16, 185, 129)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#e2e8f0', padding: 15 }
+                }
+            }
+        }
+    });
+}
+
+function refreshServerStatus() {
+    fetch('/admin/ajax/server_status')
+        .then(response => response.json())
+        .then(data => {
+            const widget = document.getElementById('serverStatusWidget');
+            if (data.online) {
+                widget.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-green-900/30 border border-green-500/50 rounded-lg p-4">
+                            <p class="text-green-300 text-sm mb-1">Status</p>
+                            <p class="text-2xl font-bold text-green-400">Online</p>
+                        </div>
+                        <div class="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
+                            <p class="text-blue-300 text-sm mb-1">Players</p>
+                            <p class="text-2xl font-bold text-blue-400">${data.players || 0}/${data.max_players || 0}</p>
+                        </div>
+                        <div class="bg-purple-900/30 border border-purple-500/50 rounded-lg p-4">
+                            <p class="text-purple-300 text-sm mb-1">Version</p>
+                            <p class="text-xl font-bold text-purple-400">${data.version || 'Unknown'}</p>
+                        </div>
+                        <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                            <p class="text-slate-300 text-sm mb-1">Server</p>
+                            <p class="text-lg font-bold text-white">${data.server_name || 'Unknown'}</p>
+                            <p class="text-xs text-slate-400 mt-1">${data.server_ip || ''}:${data.server_port || 25565}</p>
+                        </div>
+                    </div>
+                    ${data.motd ? `<div class="mt-4 p-3 bg-slate-900/50 rounded border border-slate-700"><p class="text-slate-300 text-sm"><strong>MOTD:</strong> ${data.motd}</p></div>` : ''}
+                `;
+            } else {
+                widget.innerHTML = `
+                    <div class="bg-red-900/30 border border-red-500/50 rounded-lg p-4">
+                        <p class="text-red-300 text-sm mb-1">Status</p>
+                        <p class="text-2xl font-bold text-red-400">Offline</p>
+                        ${data.error ? `<p class="text-sm text-red-300 mt-2">${data.error}</p>` : ''}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Failed to refresh server status:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setInterval(refreshServerStatus, 30000);
+});
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,277 @@
+<%
+// Get values from res.locals (set by adminLayout middleware)
+// Use default values if not provided
+const defaultColors = { primary: '#667eea', secondary: '#764ba2', accent: '#f093fb', success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6' };
+const colors = (typeof adminColors !== 'undefined' && adminColors) ? adminColors : defaultColors;
+const colorsCSSValue = (typeof colorsCSS !== 'undefined' && colorsCSS) ? colorsCSS : '';
+const gradientValue = (typeof gradient !== 'undefined' && gradient) ? gradient : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+const primaryRgbaValue = (typeof primaryRgba !== 'undefined' && primaryRgba) ? primaryRgba : 'rgba(102, 126, 234, 0.1)';
+const secondaryRgbaValue = (typeof secondaryRgba !== 'undefined' && secondaryRgba) ? secondaryRgba : 'rgba(118, 75, 162, 0.1)';
+const primaryRgbaShadowValue = (typeof primaryRgbaShadow !== 'undefined' && primaryRgbaShadow) ? primaryRgbaShadow : 'rgba(102, 126, 234, 0.3)';
+const brandName = (typeof ADMIN_BRAND_NAME !== 'undefined' && ADMIN_BRAND_NAME) ? ADMIN_BRAND_NAME : 'Minecraft CMS';
+const brandIcon = (typeof ADMIN_BRAND_ICON !== 'undefined' && ADMIN_BRAND_ICON) ? ADMIN_BRAND_ICON : 'fas fa-cube';
+
+const currentPage = (typeof pageName !== 'undefined' && pageName) ? pageName : 'index';
+const pageTitleValue = (typeof pageTitle !== 'undefined' && pageTitle) ? pageTitle : 'Admin';
+const pageSubtitleValue = (typeof pageSubtitle !== 'undefined' && pageSubtitle) ? pageSubtitle : '';
+const navItemsValue = (typeof navItems !== 'undefined' && navItems) ? navItems : {};
+const currentAdminValue = (typeof currentAdmin !== 'undefined' && currentAdmin) ? currentAdmin : '';
+const notificationCountsValue = (typeof notificationCounts !== 'undefined' && notificationCounts) ? notificationCounts : { appeals: 0, applications: 0 };
+const totalNotificationsValue = (typeof totalNotifications !== 'undefined' && totalNotifications !== null) ? totalNotifications : 0;
+
+const breadcrumbs = [
+    { label: 'Dashboard', url: '/admin' }
+];
+if (currentPage !== 'index') {
+    const pageLabel = navItemsValue[currentPage]?.label || currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
+    breadcrumbs.push({ label: pageLabel, url: null });
+}
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= pageTitleValue %> - <%= brandName %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        <%= colorsCSSValue %>
+        body { 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: #e2e8f0; 
+            font-family: system-ui, sans-serif; 
+        }
+        .stat-card { 
+            background: linear-gradient(135deg, <%= primaryRgbaValue %> 0%, <%= secondaryRgbaValue %> 100%); 
+            transition: all 0.3s ease; 
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); 
+        }
+        .nav-link { 
+            transition: all 0.2s ease;
+        }
+        .nav-link.active { 
+            background: <%= gradientValue %>; 
+            color: #ffffff;
+        }
+        .nav-link:hover:not(.active) { 
+            background: <%= primaryRgbaValue %>; 
+        }
+        .card { 
+            background: rgba(30, 41, 59, 0.6); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        .btn-primary {
+            background: <%= gradientValue %>;
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px <%= primaryRgbaShadowValue %>;
+        }
+        .btn-success { background: var(--admin-success); }
+        .btn-danger { background: var(--admin-danger); }
+        .btn-warning { background: var(--admin-warning); }
+        .btn-info { background: var(--admin-info); }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+        @media (min-width: 1024px) {
+            .sidebar.closed {
+                transform: translateX(0);
+            }
+        }
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--admin-danger);
+            color: white;
+            border-radius: 9999px;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900/95 backdrop-blur-md border-r border-purple-500/20 lg:translate-x-0">
+            <div class="flex flex-col h-full">
+                <!-- Logo -->
+                <div class="flex items-center justify-between h-16 px-6 border-b border-purple-500/20">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: <%= gradientValue %>">
+                            <i class="<%= brandIcon %> text-white"></i>
+                        </div>
+                        <h1 class="text-xl font-bold" style="background: <%= gradientValue %>; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><%= brandName %></h1>
+                    </div>
+                    <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+                    <% Object.keys(navItemsValue).forEach(page => { const item = navItemsValue[page]; %>
+                        <a href="/admin/<%= page === 'index' ? '' : page %>" class="nav-link flex items-center px-4 py-3 rounded-lg text-sm <%= currentPage === page ? 'active' : '' %>">
+                            <i class="<%= item.icon %> w-5 mr-3"></i>
+                            <span class="flex-1"><%= item.label %></span>
+                            <% if (item.badge) { %>
+                                <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"><%= item.badge %></span>
+                            <% } %>
+                        </a>
+                    <% }); %>
+                </nav>
+                
+                <!-- User Info -->
+                <div class="border-t border-purple-500/20 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white text-sm"></i>
+                            </div>
+                            <span class="text-sm text-slate-300"><%= currentAdminValue %></span>
+                        </div>
+                        <a href="/admin/logout" class="text-red-400 hover:text-red-300" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col lg:ml-0">
+            <!-- Top Bar -->
+            <header class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 shadow-lg sticky top-0 z-30">
+                <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        
+                        <!-- Breadcrumb -->
+                        <nav class="hidden md:flex items-center space-x-2 text-sm">
+                            <% breadcrumbs.forEach((crumb, index) => { %>
+                                <% if (index > 0) { %>
+                                    <i class="fas fa-chevron-right text-slate-500 text-xs"></i>
+                                <% } %>
+                                <% if (crumb.url) { %>
+                                    <a href="<%= crumb.url %>" class="text-slate-400 hover:text-white"><%= crumb.label %></a>
+                                <% } else { %>
+                                    <span class="text-white font-semibold"><%= crumb.label %></span>
+                                <% } %>
+                            <% }); %>
+                        </nav>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Search -->
+                        <div class="hidden md:block relative">
+                            <input type="text" id="globalSearch" placeholder="Search..." class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pl-10 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 w-64">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <div id="searchResults" class="hidden absolute top-full mt-2 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto"></div>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <div class="relative">
+                            <button onclick="toggleNotifications()" class="relative p-2 text-slate-400 hover:text-white">
+                                <i class="fas fa-bell text-xl"></i>
+                                <% if (totalNotificationsValue > 0) { %>
+                                    <span class="notification-badge"><%= totalNotificationsValue > 9 ? '9+' : totalNotificationsValue %></span>
+                                <% } %>
+                            </button>
+                            <div id="notificationsDropdown" class="hidden absolute right-0 mt-2 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50">
+                                <div class="p-4 border-b border-slate-700">
+                                    <h3 class="text-white font-semibold">Notifications</h3>
+                                </div>
+                                <div class="max-h-96 overflow-y-auto">
+                                    <% if (notificationCountsValue.appeals > 0) { %>
+                                        <a href="/admin/appeals" class="block p-4 hover:bg-slate-700 border-b border-slate-700">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-10 h-10 bg-yellow-900/50 rounded-lg flex items-center justify-center">
+                                                        <i class="fas fa-gavel text-yellow-400"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-white font-semibold"><%= notificationCountsValue.appeals %> Pending Appeal<%= notificationCountsValue.appeals > 1 ? 's' : '' %></p>
+                                                        <p class="text-slate-400 text-sm">Requires review</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    <% } %>
+                                    <% if (notificationCountsValue.applications > 0) { %>
+                                        <a href="/admin/applications" class="block p-4 hover:bg-slate-700 border-b border-slate-700">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-10 h-10 bg-green-900/50 rounded-lg flex items-center justify-center">
+                                                        <i class="fas fa-file-alt text-green-400"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-white font-semibold"><%= notificationCountsValue.applications %> Pending Application<%= notificationCountsValue.applications > 1 ? 's' : '' %></p>
+                                                        <p class="text-slate-400 text-sm">Requires review</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    <% } %>
+                                    <% if (totalNotificationsValue === 0) { %>
+                                        <div class="p-8 text-center text-slate-400">
+                                            <i class="fas fa-bell-slash text-4xl mb-2"></i>
+                                            <p>No new notifications</p>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+                <% if (pageTitleValue && pageTitleValue !== 'Admin') { %>
+                    <div class="mb-8">
+                        <h2 class="text-4xl font-black text-white mb-2"><%= pageTitleValue %></h2>
+                        <% if (pageSubtitleValue) { %>
+                            <p class="text-slate-400"><%= pageSubtitleValue %></p>
+                        <% } %>
+                    </div>
+                <% } %>
+                
+                <!-- Player Data Sync Notification -->
+                <% if (currentPage === 'players' || currentPage === 'index') { %>
+                    <div id="playerDataSyncNotification" class="mb-6 bg-blue-900/50 border border-blue-500/50 rounded-lg p-4 flex items-start justify-between">
+                        <div class="flex items-start gap-3 flex-1">
+                            <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-blue-300 font-semibold mb-1">Player Data Sync - In Development</h3>
+                                <p class="text-slate-300 text-sm">Player data will be synced with the server automatically. This feature is currently in development.</p>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('playerDataSyncNotification').style.display='none'" class="text-slate-400 hover:text-white ml-4 flex-shrink-0">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                <% } %>
+

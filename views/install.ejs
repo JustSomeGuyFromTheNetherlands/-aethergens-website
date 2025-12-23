@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Required</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full">
+        <div class="bg-slate-800 rounded-lg p-8 border border-yellow-500/30">
+            <h1 class="text-4xl font-bold text-yellow-400 mb-4 text-center">⚠️ Database Tables Not Found</h1>
+            <p class="mb-6 text-center text-slate-300"><%= message || 'Please run the installation script to create the required tables' %></p>
+            
+            <div class="bg-slate-900 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-4">Quick Install (Recommended)</h2>
+                <p class="text-slate-400 mb-4">Click the button below to automatically create all database tables:</p>
+                <button onclick="runInstall()" id="installBtn" class="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold text-white">
+                    <i class="fas fa-database mr-2"></i>Run Installation Script
+                </button>
+                <div id="installOutput" class="mt-4 bg-slate-950 rounded p-4 hidden">
+                    <pre id="installText" class="text-sm text-slate-300 whitespace-pre-wrap font-mono"></pre>
+                </div>
+            </div>
+            
+            <div class="bg-slate-900 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-4">Manual Installation</h2>
+                <p class="text-slate-400 mb-2">Option 1: Use command line:</p>
+                <code class="bg-slate-950 p-3 rounded block mb-4 text-sm">mysql -u root -p servercrm < database/schema.sql</code>
+                <p class="text-slate-400 mb-2">Option 2: Visit installation page:</p>
+                <a href="/database/install" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded inline-block text-white font-semibold">
+                    <i class="fas fa-external-link-alt mr-2"></i>Open Installation Page
+                </a>
+            </div>
+            
+            <p class="text-sm text-slate-400 text-center">Or import the schema file manually through phpMyAdmin or your MySQL client.</p>
+        </div>
+    </div>
+    
+    <script>
+        async function runInstall() {
+            const btn = document.getElementById('installBtn');
+            const output = document.getElementById('installOutput');
+            const text = document.getElementById('installText');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Installing... Please wait...';
+            output.classList.remove('hidden');
+            text.textContent = 'Connecting to database...\n\n';
+            
+            try {
+                const response = await fetch('/api/install');
+                const result = await response.text();
+                
+                // Format the output
+                let formatted = result
+                    .replace(/✓/g, '✓')
+                    .replace(/⊘/g, '⊘')
+                    .replace(/✗/g, '✗');
+                
+                text.textContent = formatted;
+                
+                if (formatted.includes('Installation complete') || formatted.includes('✓ Installation complete')) {
+                    btn.innerHTML = '<i class="fas fa-check mr-2"></i>Installation Complete! Redirecting...';
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-green-500');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else if (formatted.includes('✗') || formatted.includes('Error') || formatted.includes('failed')) {
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Installation Failed - Check Output';
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-red-600');
+                    btn.disabled = false;
+                } else {
+                    btn.innerHTML = '<i class="fas fa-database mr-2"></i>Run Installation Script';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                text.textContent += '\n\n✗ Error: ' + error.message;
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Error Occurred';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-red-600');
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+

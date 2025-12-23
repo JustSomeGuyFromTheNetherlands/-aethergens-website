@@ -1,0 +1,57 @@
+<%- include('partials/header') %>
+
+<% if (message === 'saved') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Rules saved!</div>
+<% } else if (message === 'deleted') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Category deleted!</div>
+<% } %>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">Add/Edit Rule Category</h3>
+        <form method="POST" class="card p-6 space-y-4">
+            <input type="hidden" name="action" value="save">
+            <div>
+                <label class="block text-slate-300 mb-2">Category Name</label>
+                <input type="text" name="category" required value="<%= editCategory || '' %>" placeholder="e.g., General Rules" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Rules (one per line)</label>
+                <textarea name="rules" required rows="15" placeholder="Rule 1&#10;Rule 2&#10;Rule 3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 font-mono text-sm text-white"><% if (editCategory && allRules[editCategory]) { %><%= allRules[editCategory].join('\n') %><% } %></textarea>
+            </div>
+            <button type="submit" class="btn-primary w-full px-4 py-2 rounded text-white">Save Rules</button>
+        </form>
+    </div>
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">Rule Categories</h3>
+        <div class="space-y-4">
+            <% if (!allRules || Object.keys(allRules).length === 0) { %>
+                <div class="card p-6 text-center text-slate-400">No rule categories yet.</div>
+            <% } else { %>
+                <% Object.keys(allRules).forEach(category => { %>
+                    <div class="card p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-lg font-bold text-white"><%= category %></h4>
+                            <div class="flex gap-2">
+                                <a href="?edit=<%= encodeURIComponent(category) %>" class="text-blue-400 hover:text-blue-300 text-sm">Edit</a>
+                                <form method="POST" class="inline" onsubmit="return confirm('Delete this category?');">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="category" value="<%= category %>">
+                                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        <ul class="space-y-1 text-sm text-slate-300">
+                            <% allRules[category].forEach(rule => { %>
+                                <li>• <%= rule %></li>
+                            <% }); %>
+                        </ul>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

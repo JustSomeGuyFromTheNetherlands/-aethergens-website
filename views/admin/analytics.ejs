@@ -1,0 +1,130 @@
+<%- include('partials/header') %>
+
+<div class="mb-6 flex justify-between items-center">
+    <div class="flex gap-2">
+        <a href="?days=7" class="px-4 py-2 rounded <%= days === 7 ? 'btn-primary text-white' : 'bg-slate-700 hover:bg-slate-600 text-white' %>">7 Days</a>
+        <a href="?days=30" class="px-4 py-2 rounded <%= days === 30 ? 'btn-primary text-white' : 'bg-slate-700 hover:bg-slate-600 text-white' %>">30 Days</a>
+        <a href="?days=90" class="px-4 py-2 rounded <%= days === 90 ? 'btn-primary text-white' : 'bg-slate-700 hover:bg-slate-600 text-white' %>">90 Days</a>
+    </div>
+    <button onclick="exportReport()" class="btn-primary px-4 py-2 rounded text-white">
+        <i class="fas fa-download mr-2"></i>Export Report
+    </button>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-4">
+        <p class="text-slate-400 text-sm">Total Players</p>
+        <p class="text-3xl font-bold text-white"><%= totalPlayers.toLocaleString() %></p>
+    </div>
+    <div class="card p-4">
+        <p class="text-slate-400 text-sm">New This Month</p>
+        <p class="text-3xl font-bold text-green-400"><%= newPlayersMonth.toLocaleString() %></p>
+    </div>
+    <div class="card p-4">
+        <p class="text-slate-400 text-sm">Total Bans</p>
+        <p class="text-3xl font-bold text-red-400"><%= totalBans.toLocaleString() %></p>
+    </div>
+    <div class="card p-4">
+        <p class="text-slate-400 text-sm">Bans This Month</p>
+        <p class="text-3xl font-bold text-yellow-400"><%= bansMonth.toLocaleString() %></p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-white mb-4">Player Growth</h3>
+        <canvas id="playerGrowthChart" style="max-height: 300px;"></canvas>
+    </div>
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-white mb-4">Ban Trends</h3>
+        <canvas id="banTrendChart" style="max-height: 300px;"></canvas>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-white mb-4">Appeals</h3>
+        <div class="space-y-2">
+            <p class="text-slate-300">Total: <span class="font-bold"><%= totalAppeals %></span></p>
+            <p class="text-yellow-300">Pending: <span class="font-bold"><%= pendingAppeals %></span></p>
+            <p class="text-green-300">Accepted: <span class="font-bold"><%= acceptedAppeals %></span></p>
+            <p class="text-red-300">Denied: <span class="font-bold"><%= deniedAppeals %></span></p>
+        </div>
+    </div>
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-white mb-4">Applications</h3>
+        <div class="space-y-2">
+            <p class="text-slate-300">Total: <span class="font-bold"><%= totalApplications %></span></p>
+            <p class="text-yellow-300">Pending: <span class="font-bold"><%= pendingApplications %></span></p>
+            <p class="text-green-300">Accepted: <span class="font-bold"><%= acceptedApplications %></span></p>
+            <p class="text-red-300">Rejected: <span class="font-bold"><%= rejectedApplications %></span></p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const playerGrowthCtx = document.getElementById('playerGrowthChart');
+if (playerGrowthCtx) {
+    new Chart(playerGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: <%= JSON.stringify(playerGrowth.map(p => p.date)) %>,
+            datasets: [{
+                label: 'Total Players',
+                data: <%= JSON.stringify(playerGrowth.map(p => p.count)) %>,
+                borderColor: 'rgb(139, 92, 246)',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }
+            }
+        }
+    });
+}
+
+const banTrendCtx = document.getElementById('banTrendChart');
+if (banTrendCtx) {
+    new Chart(banTrendCtx, {
+        type: 'bar',
+        data: {
+            labels: <%= JSON.stringify(banTrend.map(b => b.date)) %>,
+            datasets: [{
+                label: 'Bans',
+                data: <%= JSON.stringify(banTrend.map(b => b.count)) %>,
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: 'rgb(239, 68, 68)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.1)' } }
+            }
+        }
+    });
+}
+
+function exportReport() {
+    window.print();
+}
+</script>
+
+<%- include('partials/footer') %>
+

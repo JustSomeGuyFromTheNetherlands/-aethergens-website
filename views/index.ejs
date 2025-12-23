@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= serverSettings.server_name %> - Minecraft Server</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d1b3d 100%); min-height: 100vh; }
+        .hero-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .glow { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+        .animate-fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .stat-card { background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); }
+    </style>
+</head>
+<body class="text-slate-200">
+    <% if (serverSettings.maintenance_mode) { %>
+        <div class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
+            <div class="text-center">
+                <i class="fas fa-tools text-6xl text-purple-400 mb-4 animate-pulse"></i>
+                <h1 class="text-4xl font-bold text-white mb-2">Under Maintenance</h1>
+                <p class="text-slate-400"><%= serverSettings.status_message %></p>
+            </div>
+        </div>
+    <% } else { %>
+        <nav class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-50 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-20 items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cube text-white text-xl"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"><%= serverSettings.server_name %></h1>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-8">
+                        <a href="#features" class="hover:text-purple-400 transition font-medium">Features</a>
+                        <a href="#news" class="hover:text-purple-400 transition font-medium">News</a>
+                        <a href="#store" class="hover:text-purple-400 transition font-medium">Store</a>
+                        <a href="#rules" class="hover:text-purple-400 transition font-medium">Rules</a>
+                        <a href="#stats" class="hover:text-purple-400 transition font-medium">Stats</a>
+                        <a href="#wall-of-fame" class="hover:text-yellow-400 transition font-medium"><i class="fas fa-trophy mr-1"></i>Wall of Fame</a>
+                        <a href="#wall-of-shame" class="hover:text-red-400 transition font-medium"><i class="fas fa-skull mr-1"></i>Wall of Shame</a>
+                        <a href="/public/apply" class="hover:text-purple-400 transition font-medium">Apply</a>
+                        <a href="/vote" class="hover:text-purple-400 transition font-medium">Vote</a>
+                    </div>
+                    <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow">Admin</a>
+                </div>
+            </div>
+        </nav>
+
+        <section class="hero-gradient py-32 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20">
+                <div class="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-0 right-0 w-96 h-96 bg-pink-500 rounded-full blur-3xl"></div>
+            </div>
+            <div class="max-w-5xl mx-auto px-4 relative z-10 animate-fade-in">
+                <h1 class="text-6xl md:text-7xl font-black text-white mb-6 leading-tight"><%= serverSettings.server_name %></h1>
+                <p class="text-2xl text-slate-100 mb-12 font-light"><%= serverSettings.status_message %></p>
+                <div class="bg-slate-900/60 backdrop-blur-xl rounded-2xl p-6 inline-flex items-center gap-6 shadow-2xl border border-purple-500/30">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-server text-white text-2xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-sm text-slate-400 uppercase tracking-wide mb-1">Server IP</p>
+                        <p class="text-3xl font-mono font-bold text-white"><%= serverSettings.server_ip %></p>
+                        <% if (serverStatus && serverStatus.online) { %>
+                            <div class="mt-2 flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                <span class="text-sm text-green-400 font-semibold"><%= serverStatus.players || 0 %>/<%= serverStatus.max_players || 0 %> Online</span>
+                            </div>
+                        <% } %>
+                    </div>
+                    <button onclick="copyIP()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-3 rounded-xl font-semibold shadow-lg transition transform hover:scale-105">
+                        <i class="fas fa-copy mr-2"></i>Copy IP
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="stats" class="py-16 max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                <div class="stat-card rounded-2xl p-8 border border-purple-500/20 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Total Players</p>
+                            <p class="text-4xl font-bold text-white"><%= stats.total_players.toLocaleString() %></p>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-users text-white text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card rounded-2xl p-8 border border-purple-500/20 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Online Now</p>
+                            <p class="text-4xl font-bold text-green-400"><%= stats.online_now.toLocaleString() %></p>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-circle text-white text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card rounded-2xl p-8 border border-purple-500/20 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm uppercase tracking-wide mb-2">Active Bans</p>
+                            <p class="text-4xl font-bold text-red-400"><%= stats.total_bans.toLocaleString() %></p>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-ban text-white text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notification Bell (Corner) -->
+        <div id="notificationBell" class="fixed bottom-6 right-6 z-50">
+            <button onclick="toggleNotificationPanel()" class="relative w-14 h-14 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center">
+                <i class="fas fa-bell text-white text-xl"></i>
+                <% if (notifications && notifications.length > 0) { %>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"><%= notifications.length %></span>
+                <% } %>
+            </button>
+            
+            <!-- Notification Panel -->
+            <div id="notificationPanel" class="hidden absolute bottom-20 right-0 w-80 bg-slate-900/95 backdrop-blur-xl border border-purple-500/30 rounded-xl shadow-2xl max-h-96 overflow-y-auto">
+                <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                    <h3 class="text-white font-bold">Notifications</h3>
+                    <button onclick="toggleNotificationPanel()" class="text-slate-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-2 space-y-2">
+                    <% if (!notifications || notifications.length === 0) { %>
+                        <div class="p-4 text-center text-slate-400">
+                            <i class="fas fa-check-circle text-2xl mb-2"></i>
+                            <p class="text-sm">No active notifications</p>
+                        </div>
+                    <% } else { %>
+                        <% notifications.forEach(notif => { %>
+                            <%
+                            const typeClasses = {
+                                'announcement': 'border-blue-500/50 bg-blue-900/30',
+                                'planned': 'border-green-500/50 bg-green-900/30',
+                                'downtime': 'border-yellow-500/50 bg-yellow-900/30',
+                                'unexpected': 'border-red-500/50 bg-red-900/30',
+                                'maintenance': 'border-purple-500/50 bg-purple-900/30'
+                            };
+                            const typeIcons = {
+                                'announcement': 'fa-bullhorn text-blue-400',
+                                'planned': 'fa-calendar-alt text-green-400',
+                                'downtime': 'fa-clock text-yellow-400',
+                                'unexpected': 'fa-exclamation-triangle text-red-400',
+                                'maintenance': 'fa-tools text-purple-400'
+                            };
+                            const class_ = typeClasses[notif.type] || 'border-slate-500/50 bg-slate-800/30';
+                            const icon = typeIcons[notif.type] || 'fa-info-circle text-slate-400';
+                            %>
+                            <div class="<%= class_ %> border rounded-lg p-3 hover:bg-opacity-50 transition">
+                                <div class="flex items-start gap-2">
+                                    <i class="fas <%= icon %> mt-1"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-white font-semibold text-sm mb-1"><%= notif.title %></h4>
+                                        <p class="text-slate-300 text-xs leading-relaxed"><%= notif.message %></p>
+                                        <% if (notif.start_date || notif.end_date) { %>
+                                            <p class="text-slate-400 text-xs mt-1">
+                                                <% if (notif.start_date) { %>
+                                                    <%= new Date(notif.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                                                <% } %>
+                                                <% if (notif.start_date && notif.end_date) { %> - <% } %>
+                                                <% if (notif.end_date) { %>
+                                                    <%= new Date(notif.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                                                <% } %>
+                                            </p>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } %>
+                </div>
+                <div class="p-3 border-t border-slate-700">
+                    <a href="/status" class="text-purple-400 hover:text-purple-300 text-sm font-medium">
+                        <i class="fas fa-external-link-alt mr-1"></i>View Status Page
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <section id="features" class="py-16 max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-black text-white mb-4">Server Features</h2>
+                <p class="text-xl text-slate-400">Everything you need for the ultimate Minecraft experience</p>
+            </div>
+            <% if (features && features.length > 0) { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <% features.forEach(feature => { %>
+                        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 card-hover">
+                            <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
+                                <i class="<%= feature.icon || 'fas fa-star' %> text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2"><%= feature.title %></h3>
+                            <p class="text-slate-400 leading-relaxed"><%= feature.description %></p>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="text-center py-12">
+                    <i class="fas fa-star text-6xl text-slate-600 mb-4"></i>
+                    <p class="text-slate-400 text-xl">Features coming soon!</p>
+                </div>
+            <% } %>
+        </section>
+
+        <section id="store" class="py-16 bg-slate-900/50">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black text-white mb-4">Server Store</h2>
+                    <p class="text-xl text-slate-400">Support the server and unlock exclusive perks</p>
+                </div>
+                <% if (storeItems && storeItems.length > 0) { %>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <% storeItems.forEach(item => { %>
+                            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 card-hover <%= item.featured ? 'ring-2 ring-purple-500' : '' %>">
+                                <% if (item.featured) { %>
+                                    <span class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">FEATURED</span>
+                                <% } %>
+                                <h3 class="text-2xl font-bold text-white mb-2"><%= item.name %></h3>
+                                <p class="text-slate-400 mb-4"><%= item.description || 'No description' %></p>
+                                <div class="flex items-center justify-between mt-6">
+                                    <span class="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">$<%= parseFloat(item.price).toFixed(2) %></span>
+                                    <a href="/shop" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold">Buy Now</a>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-12">
+                        <i class="fas fa-store text-6xl text-slate-600 mb-4"></i>
+                        <p class="text-slate-400 text-xl">Store items coming soon!</p>
+                    </div>
+                <% } %>
+            </div>
+        </section>
+
+        <section id="news" class="py-16 max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-black text-white mb-4">Latest News</h2>
+                <p class="text-xl text-slate-400">Stay updated with server announcements</p>
+            </div>
+            <div class="space-y-6">
+                <% if (news && news.length > 0) { %>
+                    <% news.forEach(item => { %>
+                        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20 card-hover">
+                            <div class="flex items-start justify-between mb-4">
+                                <h3 class="text-3xl font-bold text-white"><%= item.title %></h3>
+                                <span class="text-sm text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full"><%= new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                            </div>
+                            <div class="text-slate-300 leading-relaxed text-lg"><%= item.content.replace(/\n/g, '<br>') %></div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="text-center py-12">
+                        <i class="fas fa-newspaper text-6xl text-slate-600 mb-4"></i>
+                        <p class="text-slate-400 text-xl">No news posts yet.</p>
+                    </div>
+                <% } %>
+            </div>
+        </section>
+
+        <section id="rules" class="py-16 bg-slate-900/50">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black text-white mb-4">Server Rules</h2>
+                    <p class="text-xl text-slate-400">Please follow these guidelines to ensure a great experience for everyone</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <% if (rules && rules.length > 0) { %>
+                        <% rules.forEach(rule => { %>
+                            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20">
+                                <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3">
+                                        <i class="fas fa-gavel text-white"></i>
+                                    </div>
+                                    <%= rule.category %>
+                                </h3>
+                                <ul class="space-y-3">
+                                    <% rule.rules.forEach(rule_text => { %>
+                                        <li class="text-slate-300 flex items-start">
+                                            <i class="fas fa-check-circle text-green-400 mr-3 mt-1 flex-shrink-0"></i>
+                                            <span><%= rule_text %></span>
+                                        </li>
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="col-span-2 text-center py-12">
+                            <i class="fas fa-gavel text-6xl text-slate-600 mb-4"></i>
+                            <p class="text-slate-400 text-xl">Rules coming soon!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </section>
+
+        <section id="leaderboard" class="py-16 max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-black text-white mb-4">Top Players</h2>
+                <p class="text-xl text-slate-400">Most active players on the server</p>
+            </div>
+            <% if (topPlayers && topPlayers.length > 0) { %>
+                <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20">
+                    <div class="space-y-3">
+                        <% topPlayers.forEach((player, index) => { %>
+                            <div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center font-bold text-white">
+                                        <%= index + 1 %>
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-semibold text-lg"><%= player.username %></p>
+                                        <p class="text-slate-400 text-sm"><%= (player.join_count || 0).toLocaleString() %> joins</p>
+                                    </div>
+                                </div>
+                                <% if (player.last_seen) { %>
+                                    <span class="text-slate-400 text-sm">Last seen: <%= new Date(player.last_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></span>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="text-center py-12">
+                    <i class="fas fa-trophy text-6xl text-slate-600 mb-4"></i>
+                    <p class="text-slate-400 text-xl">No player data available yet.</p>
+                </div>
+            <% } %>
+        </section>
+
+        <section id="quick-links" class="py-16 max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-black text-white mb-4">Quick Links</h2>
+                <p class="text-xl text-slate-400">Important pages and resources</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="/public/apply" class="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-2xl p-8 border border-purple-500/20 card-hover text-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-tie text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Apply for Staff</h3>
+                    <p class="text-purple-100">Join our team and help manage the server</p>
+                </a>
+                <a href="/public/appeal" class="bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-2xl p-8 border border-blue-500/20 card-hover text-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-gavel text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Appeal Ban</h3>
+                    <p class="text-blue-100">Submit an appeal if you believe you were banned unfairly</p>
+                </a>
+                <a href="#rules" class="bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-2xl p-8 border border-green-500/20 card-hover text-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-book text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">View Rules</h3>
+                    <p class="text-green-100">Read our server rules and guidelines</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Wall of Fame Section -->
+        <section id="wall-of-fame" class="py-16 bg-gradient-to-b from-yellow-950/30 to-slate-900/50">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black text-white mb-4">
+                        <i class="fas fa-trophy text-yellow-400 mr-3"></i>Wall of Fame
+                    </h2>
+                    <p class="text-xl text-slate-400">Celebrating outstanding players and their achievements</p>
+                </div>
+                <% if (wallOfFame && wallOfFame.length > 0) { %>
+                    <div class="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-8 border-2 border-yellow-500/30 shadow-2xl">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <% wallOfFame.forEach(entry => { %>
+                            <div class="bg-gradient-to-br from-yellow-900/40 to-slate-800/60 rounded-xl p-6 border border-yellow-500/20 hover:border-yellow-500/40 transition-all hover:shadow-lg hover:shadow-yellow-500/20">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-trophy text-white text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-bold text-white"><%= entry.player_username %></h3>
+                                            <% if (entry.playtime) { %>
+                                                <p class="text-xs text-slate-400"><i class="fas fa-clock mr-1"></i><%= Math.floor(entry.playtime / 3600) %>h played</p>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <h4 class="text-lg font-semibold text-yellow-300"><%= entry.achievement %></h4>
+                                    <% if (entry.description) { %>
+                                        <p class="text-slate-300 text-sm"><%= entry.description %></p>
+                                    <% } %>
+                                    <% if (entry.join_count) { %>
+                                        <div class="flex items-center gap-4 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-700">
+                                            <span><i class="fas fa-sign-in-alt mr-1"></i><%= entry.join_count %> joins</span>
+                                            <% if (entry.level) { %>
+                                                <span><i class="fas fa-level-up-alt mr-1"></i>Level <%= entry.level %></span>
+                                            <% } %>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-8 border-2 border-yellow-500/30 shadow-2xl text-center">
+                        <i class="fas fa-trophy text-6xl text-slate-600 mb-4"></i>
+                        <p class="text-xl text-slate-400 mb-2">No entries yet</p>
+                        <p class="text-slate-500">Check back soon for featured players and achievements!</p>
+                    </div>
+                <% } %>
+            </div>
+        </section>
+
+        <section id="wall-of-shame" class="py-16 bg-gradient-to-b from-red-950/30 to-slate-900/50">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-5xl font-black text-white mb-4">
+                        <i class="fas fa-skull text-red-500 mr-3"></i>Wall of Shame
+                    </h2>
+                    <p class="text-xl text-slate-400">Players who violated our server rules - Transparency in moderation</p>
+                </div>
+                <% if (wallOfShame && wallOfShame.length > 0) { %>
+                    <div class="bg-slate-900/80 backdrop-blur-xl rounded-2xl p-8 border-2 border-red-500/30 shadow-2xl">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <% wallOfShame.forEach(ban => { %>
+                                <div class="bg-gradient-to-br from-red-900/40 to-slate-800/60 rounded-xl p-6 border border-red-500/20 hover:border-red-500/40 transition-all hover:shadow-lg hover:shadow-red-500/20">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded-lg flex items-center justify-center">
+                                                <i class="fas fa-ban text-white text-xl"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-xl font-bold text-white"><%= ban.player_username %></h3>
+                                                <% if (ban.player_uuid) { %>
+                                                    <p class="text-xs text-slate-400 font-mono"><%= ban.player_uuid.substring(0, 8) %>...</p>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-2 mb-4">
+                                        <div class="bg-black/30 rounded-lg p-3 border-l-4 border-red-500">
+                                            <p class="text-sm text-slate-300 mb-1">
+                                                <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                                                <strong>Reason:</strong>
+                                            </p>
+                                            <p class="text-white font-medium"><%= ban.reason %></p>
+                                        </div>
+                                        
+                                        <div class="flex items-center justify-between text-sm">
+                                            <div class="text-slate-400">
+                                                <i class="fas fa-user-shield text-red-400 mr-1"></i>
+                                                <span>Banned by: <strong class="text-slate-300"><%= ban.banned_by %></strong></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center justify-between text-sm">
+                                            <div class="text-slate-400">
+                                                <i class="fas fa-calendar-alt text-red-400 mr-1"></i>
+                                                <span><%= new Date(ban.ban_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                                            </div>
+                                            <div class="text-slate-400">
+                                                <% if (ban.expires_at) { %>
+                                                    <% if (new Date(ban.expires_at).getTime() < Date.now()) { %>
+                                                        <span class="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs">Expired</span>
+                                                    <% } else { %>
+                                                        <span class="bg-yellow-900/50 text-yellow-400 px-2 py-1 rounded text-xs">
+                                                            <i class="fas fa-clock mr-1"></i>Expires: <%= new Date(ban.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                                                        </span>
+                                                    <% } %>
+                                                <% } else { %>
+                                                    <span class="bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs">
+                                                        <i class="fas fa-infinity mr-1"></i>Permanent
+                                                    </span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                        
+                        <div class="mt-8 text-center">
+                            <p class="text-slate-400 text-sm">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Total active bans: <strong class="text-red-400"><%= wallOfShame.length %></strong>
+                            </p>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-12 bg-slate-900/80 backdrop-blur-xl rounded-2xl border-2 border-green-500/30">
+                        <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
+                        <p class="text-slate-300 text-xl font-semibold">No active bans!</p>
+                        <p class="text-slate-400 mt-2">Our community is clean and rule-abiding.</p>
+                    </div>
+                <% } %>
+            </div>
+        </section>
+
+        <footer class="bg-slate-900 border-t border-purple-500/20 py-12 mt-20">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4"><%= serverSettings.server_name %></h3>
+                        <p class="text-slate-400">Join our Minecraft server for an amazing gaming experience!</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="/vote" class="text-slate-400 hover:text-purple-400 transition">Vote</a></li>
+                            <li><a href="/leaderboard" class="text-slate-400 hover:text-purple-400 transition">Leaderboard</a></li>
+                            <li><a href="/status" class="text-slate-400 hover:text-purple-400 transition">Status</a></li>
+                            <li><a href="/shop" class="text-slate-400 hover:text-purple-400 transition">Shop</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">Server Info</h3>
+                        <p class="text-slate-400 mb-2"><i class="fas fa-server mr-2"></i><%= serverSettings.server_ip %>:<%= serverSettings.server_port %></p>
+                        <p class="text-slate-400"><i class="fas fa-users mr-2"></i><%= stats.total_players.toLocaleString() %> Total Players</p>
+                    </div>
+                </div>
+                <div class="border-t border-purple-500/20 pt-8 text-center text-slate-400">
+                    <p>&copy; <%= new Date().getFullYear() %> <%= serverSettings.server_name %>. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            function copyIP() {
+                navigator.clipboard.writeText('<%= serverSettings.server_ip %>');
+                const btn = event.target.closest('button');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                btn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    btn.innerHTML = original;
+                    btn.classList.remove('bg-green-600');
+                }, 2000);
+            }
+
+            function toggleNotificationPanel() {
+                const panel = document.getElementById('notificationPanel');
+                panel.classList.toggle('hidden');
+            }
+        </script>
+    <% } %>
+</body>
+</html>
+

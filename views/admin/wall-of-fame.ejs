@@ -1,0 +1,168 @@
+<%- include('partials/header') %>
+
+<% if (message === 'added') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Entry added!</div>
+<% } else if (message === 'updated') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Entry updated!</div>
+<% } else if (message === 'deleted') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Entry deleted!</div>
+<% } %>
+<% if (error) { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300"><%= error %></div>
+<% } %>
+
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h2 class="text-2xl font-bold text-white">Wall of Fame</h2>
+        <p class="text-slate-400 mt-1">Celebrate outstanding players and their achievements</p>
+    </div>
+    <button onclick="document.getElementById('addEntryModal').classList.remove('hidden')" class="btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+        <i class="fas fa-plus mr-2"></i>Add Entry
+    </button>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% if (!entries || entries.length === 0) { %>
+        <div class="col-span-full card p-12 text-center">
+            <i class="fas fa-trophy text-6xl text-slate-600 mb-4"></i>
+            <p class="text-xl text-slate-400 mb-2">No entries yet</p>
+            <p class="text-slate-500 mb-4">Add your first wall of fame entry to celebrate player achievements</p>
+            <button onclick="document.getElementById('addEntryModal').classList.remove('hidden')" class="btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+                <i class="fas fa-plus mr-2"></i>Add Entry
+            </button>
+        </div>
+    <% } else { %>
+        <% entries.forEach(entry => { %>
+            <div class="card p-6 rounded-xl border <%= entry.featured ? 'border-yellow-500/30 bg-gradient-to-br from-yellow-900/20 to-slate-800/60' : 'border-purple-500/20' %>">
+                <% if (entry.featured) { %>
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <span class="text-yellow-400 font-semibold text-sm">Featured</span>
+                    </div>
+                <% } %>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-trophy text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white"><%= entry.player_username %></h3>
+                        <% if (entry.username) { %>
+                            <p class="text-xs text-slate-400">Player verified</p>
+                        <% } %>
+                    </div>
+                </div>
+                <h4 class="text-lg font-semibold text-purple-300 mb-2"><%= entry.achievement %></h4>
+                <% if (entry.description) { %>
+                    <p class="text-slate-300 text-sm mb-4"><%= entry.description %></p>
+                <% } %>
+                <% if (entry.playtime || entry.join_count) { %>
+                    <div class="flex gap-4 text-xs text-slate-400 mb-4 pt-4 border-t border-slate-700">
+                        <% if (entry.playtime) { %>
+                            <span><i class="fas fa-clock mr-1"></i><%= Math.floor(entry.playtime / 3600) %>h</span>
+                        <% } %>
+                        <% if (entry.join_count) { %>
+                            <span><i class="fas fa-sign-in-alt mr-1"></i><%= entry.join_count %> joins</span>
+                        <% } %>
+                    </div>
+                <% } %>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="editEntry(<%= entry.id %>, '<%= entry.player_username.replace(/'/g, "\\'") %>', '<%= entry.achievement.replace(/'/g, "\\'") %>', '<%= (entry.description || '').replace(/'/g, "\\'") %>', <%= entry.featured %>)" 
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                    <form method="POST" class="inline" onsubmit="return confirm('Delete this entry?');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="entry_id" value="<%= entry.id %>">
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Added by <%= entry.created_by %> • <%= new Date(entry.created_at).toLocaleDateString() %></p>
+            </div>
+        <% }); %>
+    <% } %>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="addEntryModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-xl p-8 max-w-lg w-full border border-purple-500/20">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white" id="modalTitle">Add Wall of Fame Entry</h2>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form method="POST" id="entryForm">
+            <input type="hidden" name="action" id="formAction" value="add">
+            <input type="hidden" name="entry_id" id="entryId">
+            
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2 text-sm font-medium">Player Username *</label>
+                <input type="text" name="player_username" id="playerUsernameInput" required
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none"
+                       placeholder="Player username">
+                <p class="text-xs text-slate-500 mt-1">Player must exist in the database</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2 text-sm font-medium">Achievement *</label>
+                <input type="text" name="achievement" id="achievementInput" required
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none"
+                       placeholder="e.g., First to Reach Level 100">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2 text-sm font-medium">Description</label>
+                <textarea name="description" id="descriptionInput" rows="3"
+                          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none"
+                          placeholder="Additional details about this achievement"></textarea>
+            </div>
+            
+            <div class="mb-6">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="featured" id="featuredCheck"
+                           class="w-4 h-4 text-purple-600 bg-slate-900 border-slate-700 rounded focus:ring-purple-500">
+                    <span class="text-slate-300 text-sm">Featured (highlighted on homepage)</span>
+                </label>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 btn-primary px-6 py-3 rounded-lg text-white font-semibold">
+                    <span id="submitText">Add Entry</span>
+                </button>
+                <button type="button" onclick="closeModal()" 
+                        class="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-lg text-white font-semibold">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editEntry(id, username, achievement, description, featured) {
+    document.getElementById('modalTitle').textContent = 'Edit Wall of Fame Entry';
+    document.getElementById('formAction').value = 'update';
+    document.getElementById('entryId').value = id;
+    document.getElementById('playerUsernameInput').value = username;
+    document.getElementById('playerUsernameInput').readOnly = true;
+    document.getElementById('achievementInput').value = achievement;
+    document.getElementById('descriptionInput').value = description || '';
+    document.getElementById('featuredCheck').checked = featured === 1;
+    document.getElementById('submitText').textContent = 'Update Entry';
+    document.getElementById('addEntryModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('addEntryModal').classList.add('hidden');
+    document.getElementById('entryForm').reset();
+    document.getElementById('modalTitle').textContent = 'Add Wall of Fame Entry';
+    document.getElementById('formAction').value = 'add';
+    document.getElementById('submitText').textContent = 'Add Entry';
+    document.getElementById('playerUsernameInput').readOnly = false;
+}
+</script>
+
+<%- include('partials/footer') %>
+

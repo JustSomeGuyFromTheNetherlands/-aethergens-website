@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - <%= serverSettings.server_name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d1b3d 100%); min-height: 100vh; }
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cube text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        <%= serverSettings.server_name %>
+                    </h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="hover:text-purple-400 transition font-medium">Home</a>
+                    <a href="/leaderboard" class="hover:text-purple-400 transition font-medium">Leaderboard</a>
+                    <a href="/vote" class="hover:text-purple-400 transition font-medium">Vote</a>
+                    <a href="/shop" class="text-purple-400 font-medium">Shop</a>
+                    <a href="/status" class="hover:text-purple-400 transition font-medium">Status</a>
+                </div>
+                <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-black mb-4">
+                <i class="fas fa-shopping-cart text-green-400 mr-4"></i>
+                Server Shop
+            </h1>
+            <p class="text-xl text-slate-400">Support the server and get awesome perks!</p>
+        </div>
+
+        <% if (message) { %>
+            <div class="bg-blue-900/50 border border-blue-500 rounded-lg p-6 mb-8 text-center">
+                <i class="fas fa-info-circle text-3xl text-blue-400 mb-4"></i>
+                <p class="text-lg text-blue-300"><%= message %></p>
+            </div>
+        <% } %>
+
+        <!-- Shop Categories -->
+        <% if (shopCategories.length === 0) { %>
+            <div class="card rounded-xl p-12 text-center">
+                <i class="fas fa-store text-6xl text-slate-400 mb-4"></i>
+                <p class="text-xl text-slate-400">No shop items available yet. Check back soon!</p>
+            </div>
+        <% } else { %>
+            <% shopCategories.forEach(category => { %>
+                <div class="mb-12">
+                    <div class="flex items-center mb-6">
+                        <i class="fas <%= category.icon %> text-3xl text-<%= category.color %>-400 mr-4"></i>
+                        <h2 class="text-3xl font-bold text-white"><%= category.name %></h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <% category.items.forEach(item => { %>
+                            <div class="card p-6 hover:scale-105 transition-all duration-300">
+                                <div class="text-center mb-4">
+                                    <img src="<%= item.image %>" alt="<%= item.name %>"
+                                         class="w-full h-32 object-cover rounded-lg mb-4">
+                                    <h3 class="text-xl font-bold text-white mb-2"><%= item.name %></h3>
+                                    <div class="text-3xl font-black text-green-400 mb-2">$<%= item.price.toFixed(2) %></div>
+                                    <p class="text-slate-400 text-sm mb-4"><%= item.description %></p>
+                                </div>
+
+                                <% if (item.features && item.features.length > 0) { %>
+                                    <div class="space-y-2 mb-6">
+                                        <% item.features.forEach(feature => { %>
+                                            <div class="flex items-center text-sm text-slate-300">
+                                                <i class="fas fa-check text-green-400 mr-2"></i>
+                                                <%= feature %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+
+                                <form method="POST" action="/shop" class="text-center">
+                                    <input type="hidden" name="item_name" value="<%= item.name %>">
+                                    <input type="hidden" name="price" value="<%= item.price %>">
+                                    <input type="hidden" name="purchase" value="1">
+                                    <button type="submit" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-6 py-3 rounded-lg font-semibold transition-all">
+                                        <i class="fas fa-shopping-cart mr-2"></i>Purchase
+                                    </button>
+                                </form>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% }); %>
+        <% } %>
+
+        <!-- Featured Deals -->
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold mb-8 text-center">
+                <i class="fas fa-star text-yellow-400 mr-2"></i>
+                Special Offers
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card p-8 text-center bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-500/30">
+                    <div class="text-6xl mb-4">🎁</div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Bundle Deal</h3>
+                    <p class="text-slate-400 mb-4">VIP + Particle Effects + Builder Kit</p>
+                    <div class="text-4xl font-black text-green-400 mb-4">$12.99 <span class="text-lg text-slate-400 line-through">$17.97</span></div>
+                    <div class="text-sm text-green-400 mb-6">Save 28%!</div>
+                    <button class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all">
+                        Get Bundle
+                    </button>
+                </div>
+
+                <div class="card p-8 text-center bg-gradient-to-br from-blue-900/50 to-cyan-900/50 border-blue-500/30">
+                    <div class="text-6xl mb-4">⚡</div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Season Pass</h3>
+                    <p class="text-slate-400 mb-4">All perks for 30 days + monthly rewards</p>
+                    <div class="text-4xl font-black text-green-400 mb-4">$24.99</div>
+                    <div class="text-sm text-blue-400 mb-6">Best value!</div>
+                    <button class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 px-8 py-4 rounded-lg font-semibold text-lg transition-all">
+                        Get Pass
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="mt-16 text-center">
+            <h2 class="text-3xl font-bold mb-8">Secure Payments</h2>
+            <div class="flex flex-wrap justify-center gap-8 mb-8">
+                <div class="flex items-center bg-slate-800 px-6 py-3 rounded-lg">
+                    <i class="fab fa-paypal text-2xl text-blue-400 mr-3"></i>
+                    <span class="text-white font-medium">PayPal</span>
+                </div>
+                <div class="flex items-center bg-slate-800 px-6 py-3 rounded-lg">
+                    <i class="fab fa-stripe text-2xl text-purple-400 mr-3"></i>
+                    <span class="text-white font-medium">Stripe</span>
+                </div>
+                <div class="flex items-center bg-slate-800 px-6 py-3 rounded-lg">
+                    <i class="fas fa-credit-card text-2xl text-green-400 mr-3"></i>
+                    <span class="text-white font-medium">Credit Card</span>
+                </div>
+                <div class="flex items-center bg-slate-800 px-6 py-3 rounded-lg">
+                    <i class="fab fa-bitcoin text-2xl text-orange-400 mr-3"></i>
+                    <span class="text-white font-medium">Crypto</span>
+                </div>
+            </div>
+            <p class="text-slate-400 text-sm">All transactions are secure and instant. Support available 24/7.</p>
+        </div>
+    </div>
+</body>
+</html>
+

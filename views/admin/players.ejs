@@ -1,0 +1,431 @@
+<%- include('partials/header') %>
+
+<% if (message) { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">
+        <i class="fas fa-check-circle mr-2"></i><%= message %>
+    </div>
+<% } %>
+
+<% if (error) { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300">
+        <i class="fas fa-exclamation-triangle mr-2"></i><%= error %>
+    </div>
+<% } %>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm">Total Players</p>
+                <p class="text-2xl font-bold text-white"><%= stats.total.toLocaleString() %></p>
+            </div>
+            <div class="w-12 h-12 bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-blue-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm">Online Now</p>
+                <p class="text-2xl font-bold text-green-400"><%= stats.online.toLocaleString() %></p>
+            </div>
+            <div class="w-12 h-12 bg-green-900/30 rounded-lg flex items-center justify-center">
+                <i class="fas fa-circle text-green-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm">Banned</p>
+                <p class="text-2xl font-bold text-red-400"><%= stats.banned.toLocaleString() %></p>
+            </div>
+            <div class="w-12 h-12 bg-red-900/30 rounded-lg flex items-center justify-center">
+                <i class="fas fa-ban text-red-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <div class="card p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm">New Today</p>
+                <p class="text-2xl font-bold text-purple-400"><%= stats.newToday.toLocaleString() %></p>
+            </div>
+            <div class="w-12 h-12 bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-plus text-purple-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions & Filters -->
+<div class="card p-4 mb-6">
+    <div class="flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex gap-2">
+            <form method="GET" class="flex gap-2">
+                <input type="hidden" name="filter" value="<%= filter %>">
+                <input type="text" name="search" placeholder="Search by username..." value="<%= search %>"
+                       class="bg-slate-900 border border-slate-700 rounded px-4 py-2 text-white">
+                <button type="submit" class="btn-primary px-4 py-2 rounded text-white">
+                    <i class="fas fa-search"></i>
+                </button>
+                <% if (search) { %>
+                    <a href="?filter=<%= filter %>" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white">
+                        <i class="fas fa-times"></i>
+                    </a>
+                <% } %>
+            </form>
+        </div>
+        <div class="flex gap-2">
+            <select id="bulkAction" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                <option value="">Bulk Actions</option>
+                <option value="ban">Ban Selected</option>
+                <option value="unban">Unban Selected</option>
+                <option value="mute">Mute Selected</option>
+                <option value="unmute">Unmute Selected</option>
+                <option value="delete">Delete Selected</option>
+            </select>
+            <button onclick="executeBulkAction()" class="btn-danger px-4 py-2 rounded text-white">
+                <i class="fas fa-play mr-2"></i>Execute
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="flex gap-2 mb-6 overflow-x-auto">
+    <a href="?filter=all<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'all' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        All Players
+    </a>
+    <a href="?filter=online<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'online' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        <i class="fas fa-circle text-xs mr-1"></i>Online
+    </a>
+    <a href="?filter=offline<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'offline' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        Offline
+    </a>
+    <a href="?filter=banned<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'banned' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        Banned
+    </a>
+    <a href="?filter=muted<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'muted' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        Muted
+    </a>
+    <a href="?filter=new<%= search ? '&search=' + encodeURIComponent(search) : '' %>"
+       class="px-4 py-2 rounded whitespace-nowrap <%= filter === 'new' ? 'btn-primary text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>">
+        New (7d)
+    </a>
+</div>
+
+<!-- Players Table -->
+<div class="card rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table id="playersTable" class="w-full">
+            <thead class="bg-slate-900">
+                <tr>
+                    <th class="px-4 py-3 text-left">
+                        <input type="checkbox" id="selectAll" class="rounded border-slate-600">
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Player</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Rank</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Playtime</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">First Seen</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Last Seen</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+                <% players.forEach(player => { 
+                    const lastSeenTime = new Date(player.last_seen).getTime();
+                    // Use synced online status if available, otherwise fallback to time-based check
+                    const isOnline = player.isOnline !== undefined ? player.isOnline : ((Date.now() - lastSeenTime) < 300000);
+                    // Use formatted playtime if available, otherwise calculate
+                    // Format playtime
+                    let playtimeDisplay = '-';
+                    if (player.playtimeFormatted) {
+                        playtimeDisplay = player.playtimeFormatted;
+                    } else if (player.total_playtime) {
+                        const totalSeconds = parseInt(player.total_playtime) || 0;
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        playtimeDisplay = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    }
+                    const playtimeHours = player.playtimeHours !== undefined ? player.playtimeHours : Math.floor((player.total_playtime || player.playtime || 0) / 3600);
+                %>
+                    <tr class="hover:bg-slate-900 transition" data-username="<%= player.username %>">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" name="selected_players[]" value="<%= player.username %>"
+                                   class="player-checkbox rounded border-slate-600">
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                    <% if (isOnline) { %>
+                                        <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse" title="Currently Online"></span>
+                                    <% } %>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-white text-lg"><%= player.username %></div>
+                                    <% if (player.uuid) { %>
+                                        <div class="text-xs text-slate-500 font-mono"><%= player.uuid.substring(0, 8) %>...</div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-1">
+                                <% if (isOnline) { %>
+                                    <span class="px-2 py-1 text-xs rounded bg-green-900/50 text-green-400 border border-green-500/30">
+                                        <i class="fas fa-circle text-xs mr-1"></i>Online
+                                    </span>
+                                <% } else { %>
+                                    <span class="px-2 py-1 text-xs rounded bg-slate-700 text-slate-400 border border-slate-600">
+                                        <i class="fas fa-circle text-xs mr-1"></i>Offline
+                                    </span>
+                                <% } %>
+                                <% if (player.banned) { %>
+                                    <span class="px-2 py-1 text-xs rounded bg-red-900/50 text-red-400 border border-red-500/30">
+                                        <i class="fas fa-ban text-xs mr-1"></i>Banned
+                                    </span>
+                                <% } %>
+                                <% if (player.muted) { %>
+                                    <span class="px-2 py-1 text-xs rounded bg-yellow-900/50 text-yellow-400 border border-yellow-500/30">
+                                        <i class="fas fa-volume-mute text-xs mr-1"></i>Muted
+                                    </span>
+                                <% } %>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs rounded bg-purple-900/30 text-purple-300 border border-purple-500/30">
+                                <%= player.rank || 'member' %>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-300" title="Total playtime: <%= playtimeHours %> hours">
+                            <% if (playtimeDisplay !== '-') { %>
+                                <%= playtimeDisplay %>
+                            <% } else { %>
+                                <span class="text-slate-500">-</span>
+                            <% } %>
+                        </td>
+                        <td class="px-6 py-4 text-slate-400 text-sm">
+                            <%= new Date(player.first_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                        </td>
+                        <td class="px-6 py-4 text-slate-400 text-sm" data-sort="<%= lastSeenTime %>">
+                            <% 
+                            const timeDiff = Date.now() - lastSeenTime;
+                            if (timeDiff < 60000) { %>
+                                <span class="text-green-400">Just now</span>
+                            <% } else if (timeDiff < 3600000) { %>
+                                <%= Math.floor(timeDiff / 60000) %>m ago
+                            <% } else if (timeDiff < 86400000) { %>
+                                <%= Math.floor(timeDiff / 3600000) %>h ago
+                            <% } else { %>
+                                <%= new Date(player.last_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                            <% } %>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex gap-1">
+                                <% if (player.banned) { %>
+                                    <button onclick="unbanPlayer('<%= player.username %>')"
+                                            class="p-2 text-green-400 hover:text-green-300 rounded" title="Unban">
+                                        <i class="fas fa-unlock"></i>
+                                    </button>
+                                <% } else { %>
+                                    <button onclick="banPlayer('<%= player.username %>')"
+                                            class="p-2 text-red-400 hover:text-red-300 rounded" title="Ban">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                <% } %>
+                                <% if (player.muted) { %>
+                                    <button onclick="unmutePlayer('<%= player.username %>')"
+                                            class="p-2 text-green-400 hover:text-green-300 rounded" title="Unmute">
+                                        <i class="fas fa-volume-up"></i>
+                                    </button>
+                                <% } else { %>
+                                    <button onclick="mutePlayer('<%= player.username %>')"
+                                            class="p-2 text-yellow-400 hover:text-yellow-300 rounded" title="Mute">
+                                        <i class="fas fa-volume-mute"></i>
+                                    </button>
+                                <% } %>
+                                <a href="/admin/player/<%= player.username %>"
+                                   class="p-2 text-blue-400 hover:text-blue-300 rounded" title="View Details">
+                                    <i class="fas fa-info-circle"></i>
+                                </a>
+                                <button onclick="deletePlayer('<%= player.username %>')"
+                                        class="p-2 text-red-400 hover:text-red-300 rounded" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<script>
+$(document).ready(function() {
+    $('#playersTable').DataTable({
+        pageLength: 50,
+        order: [[6, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: [0, 7] },
+            { type: 'num', targets: 6 }
+        ],
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ players",
+            info: "Showing _START_ to _END_ of _TOTAL_ players",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        },
+        dom: '<"flex justify-between items-center mb-4"<"flex gap-2"l><"flex gap-2"f>>rt<"flex justify-between items-center mt-4"<"text-slate-400"i><"flex gap-2"p>>',
+        drawCallback: function() {
+            $('.dataTables_wrapper').css('color', '#e2e8f0');
+            $('.dataTables_filter input').addClass('bg-slate-800 border-slate-700 text-white px-3 py-1 rounded');
+            $('.dataTables_length select').addClass('bg-slate-800 border-slate-700 text-white px-3 py-1 rounded');
+            $('.dataTables_paginate a').addClass('text-slate-300 hover:text-white px-3 py-1');
+        }
+    });
+
+    $('#selectAll').on('change', function() {
+        $('.player-checkbox').prop('checked', this.checked);
+    });
+});
+
+function executeBulkAction() {
+    const action = document.getElementById('bulkAction').value;
+    if (!action) {
+        alert('Please select an action');
+        return;
+    }
+    const selected = document.querySelectorAll('.player-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Please select at least one player');
+        return;
+    }
+    if (!confirm(`Apply "${action}" to ${selected.length} selected players?`)) {
+        return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.innerHTML = `<input type="hidden" name="action" value="bulk"><input type="hidden" name="bulk_action" value="${action}">${Array.from(selected).map(cb => `<input type="hidden" name="selected_players[]" value="${cb.value}">`).join('')}`;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function banPlayer(username) {
+    document.getElementById('banUsername').value = username;
+    document.getElementById('actionType').value = 'ban';
+    document.getElementById('modalTitle').innerText = 'Ban Player';
+    document.getElementById('actionModal').classList.remove('hidden');
+}
+
+function unbanPlayer(username) {
+    if (confirm(`Unban ${username}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `<input type="hidden" name="action" value="unban"><input type="hidden" name="username" value="${username}">`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function mutePlayer(username) {
+    document.getElementById('banUsername').value = username;
+    document.getElementById('actionType').value = 'mute';
+    document.getElementById('modalTitle').innerText = 'Mute Player';
+    document.getElementById('actionModal').classList.remove('hidden');
+}
+
+function unmutePlayer(username) {
+    if (confirm(`Unmute ${username}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `<input type="hidden" name="action" value="unmute"><input type="hidden" name="username" value="${username}">`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deletePlayer(username) {
+    if (confirm(`Delete player ${username}? This cannot be undone.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `<input type="hidden" name="action" value="delete"><input type="hidden" name="username" value="${username}">`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function closeModal() {
+    document.getElementById('actionModal').classList.add('hidden');
+}
+
+function exportPlayers() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/players/export';
+    form.innerHTML = `
+        <input type="hidden" name="format" value="csv">
+        <input type="hidden" name="filter" value="<%= filter %>">
+        <input type="hidden" name="search" value="<%= search %>">
+    `;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+<!-- Action Modal -->
+<div id="actionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="card p-6 max-w-md w-full">
+        <h3 id="modalTitle" class="text-xl font-bold text-white mb-4">Ban Player</h3>
+        <form method="POST">
+            <input type="hidden" name="action" id="actionType" value="ban">
+            <input type="hidden" name="username" id="banUsername">
+            <div class="mb-4">
+                <label class="block text-slate-300 mb-2">Reason</label>
+                <textarea name="reason" required class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white" rows="3"></textarea>
+            </div>
+            <div id="expiresField" class="mb-4">
+                <label class="block text-slate-300 mb-2">Expires (optional)</label>
+                <input type="datetime-local" name="expires" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 btn-danger px-4 py-2 rounded text-white">Confirm</button>
+                <button type="button" onclick="closeModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('actionType').addEventListener('change', function() {
+    const expiresField = document.getElementById('expiresField');
+    if (this.value === 'ban') {
+        expiresField.style.display = 'block';
+    } else {
+        expiresField.style.display = 'none';
+    }
+});
+</script>
+
+<%- include('partials/footer') %>
+

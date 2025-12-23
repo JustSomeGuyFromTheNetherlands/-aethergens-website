@@ -1,0 +1,98 @@
+<%- include('partials/header') %>
+
+<% if (message === 'added') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">User added!</div>
+<% } else if (message === 'updated') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">User updated!</div>
+<% } else if (message === 'deleted') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">User deleted!</div>
+<% } %>
+
+<% if (error) { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300">
+        <%= error === 'username_exists' ? 'Username already exists!' : error %>
+    </div>
+<% } %>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4"><%= editUser ? 'Edit' : 'Add' %> User</h3>
+        <form method="POST" class="card p-6 space-y-4">
+            <input type="hidden" name="action" value="<%= editUser ? 'update' : 'add' %>">
+            <% if (editUser) { %><input type="hidden" name="user_id" value="<%= editUser.id %>"><% } %>
+            <div>
+                <label class="block text-slate-300 mb-2">Username</label>
+                <input type="text" name="username" required value="<%= editUser ? editUser.username : '' %>" <%= editUser ? 'readonly' : '' %> class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Email <%= editUser ? '(optional)' : '' %></label>
+                <input type="email" name="email" <%= editUser ? '' : 'required' %> value="<%= editUser && editUser.email ? editUser.email : '' %>" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Password <%= editUser ? '(leave empty to keep current)' : '' %></label>
+                <input type="password" name="password" <%= editUser ? '' : 'required' %> class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Role</label>
+                <select name="role" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                    <option value="admin" <%= editUser && editUser.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                    <option value="moderator" <%= editUser && editUser.role === 'moderator' ? 'selected' : '' %>>Moderator</option>
+                </select>
+            </div>
+            <% if (editUser) { %>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="active" <%= editUser.active ? 'checked' : '' %> class="mr-2">
+                        <span class="text-slate-300">Active</span>
+                    </label>
+                </div>
+            <% } %>
+            <button type="submit" class="btn-primary w-full px-4 py-2 rounded text-white"><%= editUser ? 'Update' : 'Add' %> User</button>
+            <% if (editUser) { %><a href="/admin/users" class="block text-center text-slate-400 hover:text-slate-300 mt-2">Cancel</a><% } %>
+        </form>
+    </div>
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">All Users</h3>
+        <div class="space-y-4">
+            <% if (!users || users.length === 0) { %>
+                <div class="card p-6 text-center text-slate-400">No users yet.</div>
+            <% } else { %>
+                <% users.forEach(user => { %>
+                    <div class="card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 class="text-lg font-bold text-white"><%= user.username %></h4>
+                                <% if (user.email) { %>
+                                    <p class="text-sm text-slate-400"><%= user.email %></p>
+                                <% } else { %>
+                                    <p class="text-sm text-slate-500">No email</p>
+                                <% } %>
+                                <p class="text-xs text-slate-500 mt-1">Created: <%= new Date(user.created_at).toLocaleDateString() %></p>
+                                <% if (user.last_login) { %>
+                                    <p class="text-xs text-slate-500">Last login: <%= new Date(user.last_login).toLocaleDateString() %></p>
+                                <% } %>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="?edit=<%= user.id %>" class="text-blue-400 hover:text-blue-300 text-sm">Edit</a>
+                                <% if (user.username !== currentAdmin) { %>
+                                    <form method="POST" class="inline" onsubmit="return confirm('Delete this user?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="user_id" value="<%= user.id %>">
+                                        <button type="submit" class="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                                    </form>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <span class="px-2 py-1 text-xs rounded bg-purple-900/30 text-purple-300"><%= user.role %></span>
+                            <span class="px-2 py-1 text-xs rounded <%= user.active ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300' %>"><%= user.active ? 'Active' : 'Inactive' %></span>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

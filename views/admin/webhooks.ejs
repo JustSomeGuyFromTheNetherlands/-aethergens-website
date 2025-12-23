@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+
+<% if (message) { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300"><%= message %></div>
+<% } %>
+
+<% if (error) { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300"><%= error %></div>
+<% } %>
+
+<div class="card p-6">
+    <h3 class="text-2xl font-bold text-white mb-6">Discord Webhook Configuration</h3>
+    <form method="POST" class="space-y-6">
+        <input type="hidden" name="action" value="save">
+        <% const webhookTypes = ['news', 'bans', 'appeals', 'applications', 'players', 'server_status']; %>
+        <% webhookTypes.forEach(type => { const webhook = webhooks[type] || {}; %>
+            <div class="border-b border-slate-700 pb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-white font-semibold capitalize"><%= type %> Webhook</label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="active_<%= type %>" <%= webhook.active ? 'checked' : '' %> class="mr-2">
+                        <span class="text-slate-300 text-sm">Active</span>
+                    </label>
+                </div>
+                <input type="url" name="webhook_<%= type %>" value="<%= webhook.url || '' %>" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+        <% }); %>
+        <div class="border-b border-slate-700 pb-4">
+            <label class="block text-white font-semibold mb-2">Webhook Proxy URL (optional)</label>
+            <input type="url" name="webhook_proxy_url" value="<%= proxyUrl || '' %>" placeholder="https://proxy.example.com/webhook" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            <p class="text-xs text-slate-400 mt-1">Use a proxy if Discord webhooks are blocked</p>
+        </div>
+        <button type="submit" class="btn-primary px-6 py-3 rounded-lg text-white">Save Webhook Settings</button>
+    </form>
+    
+    <div class="mt-8">
+        <h4 class="text-white font-semibold mb-4">Test Webhooks</h4>
+        <div class="grid grid-cols-2 gap-2">
+            <% webhookTypes.forEach(type => { %>
+                <form method="POST" class="inline">
+                    <input type="hidden" name="action" value="test">
+                    <input type="hidden" name="webhook_name" value="<%= type %>">
+                    <button type="submit" class="btn-info w-full px-4 py-2 rounded text-white text-sm">Test <%= type.charAt(0).toUpperCase() + type.slice(1) %></button>
+                </form>
+            <% }); %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+

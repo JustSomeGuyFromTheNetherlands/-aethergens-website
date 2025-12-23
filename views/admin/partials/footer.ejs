@@ -1,0 +1,93 @@
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('closed');
+            overlay.classList.toggle('hidden');
+        }
+        
+        // Notifications dropdown
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationsDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const notificationsBtn = event.target.closest('[onclick="toggleNotifications()"]');
+            const notificationsDropdown = document.getElementById('notificationsDropdown');
+            
+            if (!notificationsBtn && !notificationsDropdown.contains(event.target)) {
+                notificationsDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Global search
+        let searchTimeout;
+        const globalSearch = document.getElementById('globalSearch');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', function(e) {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                const results = document.getElementById('searchResults');
+                
+                if (query.length < 2) {
+                    results.classList.add('hidden');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                        const data = await response.json();
+                        
+                        let html = '';
+                        if (data.news && data.news.length > 0) {
+                            html += '<div class="p-2 text-xs text-slate-400 uppercase">News</div>';
+                            data.news.forEach(item => {
+                                html += `<a href="/admin/news?edit=${item.id}" class="block p-3 hover:bg-slate-700 border-b border-slate-700">
+                                    <div class="font-semibold text-white">${item.title}</div>
+                                    <div class="text-xs text-slate-400">${item.author}</div>
+                                </a>`;
+                            });
+                        }
+                        if (data.players && data.players.length > 0) {
+                            html += '<div class="p-2 text-xs text-slate-400 uppercase">Players</div>';
+                            data.players.forEach(item => {
+                                html += `<a href="/admin/players?search=${item.username}" class="block p-3 hover:bg-slate-700 border-b border-slate-700">
+                                    <div class="font-semibold text-white">${item.username}</div>
+                                    <div class="text-xs text-slate-400">Last seen: ${new Date(item.last_seen).toLocaleDateString()}</div>
+                                </a>`;
+                            });
+                        }
+                        if (html === '') {
+                            html = '<div class="p-4 text-slate-400">No results found</div>';
+                        }
+                        results.innerHTML = html;
+                        results.classList.remove('hidden');
+                    } catch (error) {
+                        results.innerHTML = '<div class="p-4 text-slate-400">Search error</div>';
+                        results.classList.remove('hidden');
+                    }
+                }, 300);
+            });
+        }
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchInput = document.getElementById('globalSearch');
+            const searchResults = document.getElementById('searchResults');
+            
+            if (searchInput && searchResults && !searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
+

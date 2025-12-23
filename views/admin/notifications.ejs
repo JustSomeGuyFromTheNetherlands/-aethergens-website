@@ -1,0 +1,101 @@
+<%- include('partials/header') %>
+
+<% if (message === 'added') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Notification added!</div>
+<% } else if (message === 'updated') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Notification updated!</div>
+<% } else if (message === 'deleted') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Notification deleted!</div>
+<% } else if (message === 'toggled') { %>
+    <div class="bg-green-900/50 border border-green-500 rounded-lg p-4 mb-6 text-green-300">Status toggled!</div>
+<% } %>
+
+<% if (error === 'missing_fields') { %>
+    <div class="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6 text-red-300">Title and message are required!</div>
+<% } %>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">Add Notification</h3>
+        <form method="POST" class="card p-6 space-y-4">
+            <input type="hidden" name="action" value="add">
+            <div>
+                <label class="block text-slate-300 mb-2">Type</label>
+                <select name="type" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                    <option value="announcement">Announcement</option>
+                    <option value="downtime">Downtime</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Title</label>
+                <input type="text" name="title" required class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Message</label>
+                <textarea name="message" required rows="4" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-slate-300 mb-2">Start Date</label>
+                    <input type="datetime-local" name="start_date" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-2">End Date</label>
+                    <input type="datetime-local" name="end_date" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                </div>
+            </div>
+            <div>
+                <label class="block text-slate-300 mb-2">Priority</label>
+                <select name="priority" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white">
+                    <option value="low">Low</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" name="active" checked class="mr-2">
+                    <span class="text-slate-300">Active</span>
+                </label>
+            </div>
+            <button type="submit" class="btn-primary w-full px-4 py-2 rounded text-white">Add Notification</button>
+        </form>
+    </div>
+    <div>
+        <h3 class="text-2xl font-bold text-white mb-4">All Notifications</h3>
+        <div class="space-y-4">
+            <% if (!notifications || notifications.length === 0) { %>
+                <div class="card p-6 text-center text-slate-400">No notifications yet.</div>
+            <% } else { %>
+                <% notifications.forEach(notif => { %>
+                    <div class="card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 class="text-lg font-bold text-white"><%= notif.title %></h4>
+                                <p class="text-sm text-slate-400 capitalize"><%= notif.type %></p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded <%= notif.active ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300' %>"><%= notif.active ? 'Active' : 'Inactive' %></span>
+                        </div>
+                        <p class="text-sm text-slate-300 mb-2"><%= notif.message %></p>
+                        <div class="flex gap-2 mt-4">
+                            <form method="POST" class="inline">
+                                <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="id" value="<%= notif.id %>">
+                                <button type="submit" class="text-blue-400 hover:text-blue-300 text-sm"><%= notif.active ? 'Deactivate' : 'Activate' %></button>
+                            </form>
+                            <form method="POST" class="inline" onsubmit="return confirm('Delete this notification?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<%= notif.id %>">
+                                <button type="submit" class="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
+
