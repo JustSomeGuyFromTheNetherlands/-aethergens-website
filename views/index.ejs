@@ -36,7 +36,7 @@
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                             <i class="fas fa-cube text-white text-xl"></i>
                         </div>
-                        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></h1>
+                        <a href="/" class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hover:opacity-80 transition"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></a>
                     </div>
                     <div class="hidden md:flex items-center space-x-8">
                         <a href="#features" class="hover:text-purple-400 transition font-medium">Features</a>
@@ -51,7 +51,29 @@
                         <a href="/public/apply" class="hover:text-purple-400 transition font-medium">Apply</a>
                         <a href="/vote" class="hover:text-purple-400 transition font-medium">Vote</a>
                     </div>
-                    <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow">Admin</a>
+                    <div class="flex items-center space-x-4">
+                        <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow hidden md:block">Admin</a>
+                        <button id="mobile-menu-btn" class="md:hidden text-slate-200 hover:text-purple-400 transition p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-purple-500/20 mt-2 pt-4">
+                    <div class="flex flex-col space-y-3">
+                        <a href="#features" class="hover:text-purple-400 transition font-medium py-2">Features</a>
+                        <a href="#news" class="hover:text-purple-400 transition font-medium py-2">News</a>
+                        <a href="#store" class="hover:text-purple-400 transition font-medium py-2">Store</a>
+                        <a href="#rules" class="hover:text-purple-400 transition font-medium py-2">Rules</a>
+                        <a href="#stats" class="hover:text-purple-400 transition font-medium py-2">Stats</a>
+                        <a href="/blog" class="hover:text-purple-400 transition font-medium py-2"><i class="fas fa-blog mr-1"></i>Blog</a>
+                        <a href="/changelog" class="hover:text-purple-400 transition font-medium py-2"><i class="fas fa-history mr-1"></i>Changelog</a>
+                        <a href="#wall-of-fame" class="hover:text-yellow-400 transition font-medium py-2"><i class="fas fa-trophy mr-1"></i>Wall of Fame</a>
+                        <a href="#wall-of-shame" class="hover:text-red-400 transition font-medium py-2"><i class="fas fa-skull mr-1"></i>Wall of Shame</a>
+                        <a href="/public/apply" class="hover:text-purple-400 transition font-medium py-2">Apply</a>
+                        <a href="/vote" class="hover:text-purple-400 transition font-medium py-2">Vote</a>
+                        <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg text-center mt-2">Admin</a>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -566,6 +588,20 @@
                 const panel = document.getElementById('notificationPanel');
                 panel.classList.toggle('hidden');
             }
+
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-btn')?.addEventListener('click', function() {
+                const menu = document.getElementById('mobile-menu');
+                menu.classList.toggle('hidden');
+                const icon = this.querySelector('i');
+                if (menu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                }
+            });
         </script>
     <% } %>
 </body>
