@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { getDB } = require('../database');
 const { getServerStatus } = require('../utils/minecraftQuery');
+const db = getDB();
 
 // GET / - Homepage
 router.get('/', async (req, res) => {
@@ -78,14 +79,14 @@ router.get('/', async (req, res) => {
     `);
 
     // Get stats
-    const [statsResult] = await db.query(`
+    const statsResult = await db.fetchOne(`
       SELECT
         (SELECT COUNT(*) FROM players) as total_players,
         (SELECT COUNT(*) FROM bans WHERE active = 1) as total_bans
     `);
     const stats = {
-      total_players: statsResult[0].total_players || 0,
-      total_bans: statsResult[0].total_bans || 0,
+      total_players: statsResult ? statsResult.total_players || 0 : 0,
+      total_bans: statsResult ? statsResult.total_bans || 0 : 0,
       online_now: 0 // Will be set from server status if available
     };
 
@@ -318,7 +319,7 @@ router.get('/changelog', async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Get changelog entries
-    const [entries] = await db.query(`
+    const entries = await db.fetchAll(`
       SELECT id, version, title, description, release_date, is_major, created_at
       FROM changelog
       ORDER BY release_date DESC, created_at DESC
@@ -326,19 +327,19 @@ router.get('/changelog', async (req, res) => {
     `, [limit, offset]);
 
     // Get total count
-    const [countResult] = await db.query('SELECT COUNT(*) as total FROM changelog');
-    const total = countResult[0].total;
+    const countResult = await db.fetchOne('SELECT COUNT(*) as total FROM changelog');
+    const total = countResult ? countResult.total : 0;
     const totalPages = Math.ceil(total / limit);
 
     // Get stats
-    const [statsResult] = await db.query(`
+    const statsResult = await db.fetchOne(`
       SELECT
         COUNT(*) as total_entries,
         SUM(CASE WHEN is_major = 1 THEN 1 ELSE 0 END) as major_releases,
         MAX(release_date) as latest_release
       FROM changelog
     `);
-    const stats = statsResult[0];
+    const stats = statsResult || { total_entries: 0, major_releases: 0, latest_release: null };
 
     res.render('changelog', {
       serverSettings,
@@ -386,7 +387,7 @@ router.get('/blog', async (req, res) => {
     }
 
     // Get posts
-    const [posts] = await db.query(`
+    const posts = await db.fetchAll(`
       SELECT p.*, c.name as category_name, c.color as category_color, c.slug as category_slug,
              u.username as author_name, COUNT(cm.id) as comment_count
       FROM blog_posts p
@@ -400,17 +401,17 @@ router.get('/blog', async (req, res) => {
     `, params);
 
     // Get total count
-    const [countResult] = await db.query(`
+    const countResult = await db.fetchOne(`
       SELECT COUNT(DISTINCT p.id) as total FROM blog_posts p ${whereClause.replace('GROUP BY p.id', '')}
     `, params.slice(2));
-    const total = countResult[0].total;
+    const total = countResult ? countResult.total : 0;
     const totalPages = Math.ceil(total / limit);
 
     // Get categories
-    const [categories] = await db.query('SELECT id, name, slug, color FROM blog_categories WHERE active = 1 ORDER BY sort_order');
+    const categories = await db.fetchAll('SELECT id, name, slug, color FROM blog_categories WHERE active = 1 ORDER BY sort_order');
 
     // Get popular tags
-    const [tags] = await db.query(`
+    const tags = await db.fetchAll(`
       SELECT t.id, t.name, t.slug, t.color, COUNT(pt.post_id) as post_count
       FROM blog_tags t
       LEFT JOIN blog_post_tags pt ON t.id = pt.tag_id
@@ -422,7 +423,7 @@ router.get('/blog', async (req, res) => {
     `);
 
     // Get recent posts for sidebar
-    const [recentPosts] = await db.query(`
+    const recentPosts = await db.fetchAll(`
       SELECT id, title, slug, published_at
       FROM blog_posts
       WHERE status = 'published'
@@ -466,7 +467,7 @@ router.get('/blog', async (req, res) => {
 router.get('/blog/:slug', async (req, res) => {
   try {
     const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    const [posts] = await db.query(`
+    const posts = await db.fetchAll(`
       SELECT p.*, c.name as category_name, c.color as category_color, c.slug as category_slug,
              u.username as author_name
       FROM blog_posts p
@@ -476,7 +477,7 @@ router.get('/blog/:slug', async (req, res) => {
     `, [req.params.slug]);
 
     if (posts.length === 0) {
-      return res.status(404).render('error', { error: 'Blog post not found' });
+      return res.status(404).render('error', { error: 'Blog post not found', serverSettings });
     }
 
     const post = posts[0];
@@ -485,7 +486,7 @@ router.get('/blog/:slug', async (req, res) => {
     await db.query('UPDATE blog_posts SET views = views + 1 WHERE id = ?', [post.id]);
 
     // Get tags
-    const [tags] = await db.query(`
+    const tags = await db.fetchAll(`
       SELECT t.id, t.name, t.slug, t.color
       FROM blog_tags t
       INNER JOIN blog_post_tags pt ON t.id = pt.tag_id
@@ -494,7 +495,7 @@ router.get('/blog/:slug', async (req, res) => {
     `, [post.id]);
 
     // Get comments
-    const [comments] = await db.query(`
+    const comments = await db.fetchAll(`
       SELECT c.*, p.slug as post_slug
       FROM blog_comments c
       LEFT JOIN blog_posts p ON c.post_id = p.id
@@ -504,7 +505,7 @@ router.get('/blog/:slug', async (req, res) => {
 
     // Get replies for each comment
     for (const comment of comments) {
-      const [replies] = await db.query(`
+      const replies = await db.fetchAll(`
         SELECT c.*, p.slug as post_slug
         FROM blog_comments c
         LEFT JOIN blog_posts p ON c.post_id = p.id
@@ -515,7 +516,7 @@ router.get('/blog/:slug', async (req, res) => {
     }
 
     // Get related posts
-    const [relatedPosts] = await db.query(`
+    const relatedPosts = await db.fetchAll(`
       SELECT p.id, p.title, p.slug, p.excerpt, p.featured_image, p.published_at
       FROM blog_posts p
       WHERE p.id != ? AND p.status = 'published' AND (
@@ -553,7 +554,7 @@ router.post('/blog/:slug/comment', async (req, res) => {
     const { author_name, author_email, content, parent_id } = req.body;
 
     // Get post
-    const [posts] = await db.query('SELECT id, comments_enabled FROM blog_posts WHERE slug = ?', [req.params.slug]);
+    const posts = await db.fetchAll('SELECT id, comments_enabled FROM blog_posts WHERE slug = ?', [req.params.slug]);
     if (posts.length === 0) {
       return res.status(404).json({ error: 'Post not found' });
     }
@@ -596,9 +597,10 @@ router.post('/blog/:slug/comment', async (req, res) => {
 // GET /blog/category/:slug - Posts by category
 router.get('/blog/category/:slug', async (req, res) => {
   try {
-    const [categories] = await db.query('SELECT id, name FROM blog_categories WHERE slug = ? AND active = 1', [req.params.slug]);
+    const categories = await db.fetchAll('SELECT id, name FROM blog_categories WHERE slug = ? AND active = 1', [req.params.slug]);
     if (categories.length === 0) {
-      return res.status(404).render('error', { error: 'Category not found' });
+      const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
+      return res.status(404).render('error', { error: 'Category not found', serverSettings });
     }
 
     const category = categories[0];
@@ -607,16 +609,18 @@ router.get('/blog/category/:slug', async (req, res) => {
     router.handle(req, res);
   } catch (error) {
     console.error('Category page error:', error);
-    res.status(500).render('error', { error: 'Failed to load category' });
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
+    res.status(500).render('error', { error: 'Failed to load category', serverSettings });
   }
 });
 
 // GET /blog/tag/:slug - Posts by tag
 router.get('/blog/tag/:slug', async (req, res) => {
   try {
-    const [tags] = await db.query('SELECT id, name FROM blog_tags WHERE slug = ?', [req.params.slug]);
+    const tags = await db.fetchAll('SELECT id, name FROM blog_tags WHERE slug = ?', [req.params.slug]);
     if (tags.length === 0) {
-      return res.status(404).render('error', { error: 'Tag not found' });
+      const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
+      return res.status(404).render('error', { error: 'Tag not found', serverSettings });
     }
 
     const tag = tags[0];
@@ -625,7 +629,8 @@ router.get('/blog/tag/:slug', async (req, res) => {
     router.handle(req, res);
   } catch (error) {
     console.error('Tag page error:', error);
-    res.status(500).render('error', { error: 'Failed to load tag' });
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
+    res.status(500).render('error', { error: 'Failed to load tag', serverSettings });
   }
 });
 
