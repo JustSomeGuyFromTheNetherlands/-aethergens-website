@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= serverSettings.server_name %> - Minecraft Server</title>
+    <title><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %> - Minecraft Server</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -20,7 +20,7 @@
     </style>
 </head>
 <body class="text-slate-200">
-    <% if (serverSettings.maintenance_mode) { %>
+    <% if (serverSettings && serverSettings.maintenance_mode) { %>
         <div class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
             <div class="text-center">
                 <i class="fas fa-tools text-6xl text-purple-400 mb-4 animate-pulse"></i>
@@ -36,7 +36,7 @@
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                             <i class="fas fa-cube text-white text-xl"></i>
                         </div>
-                        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"><%= serverSettings.server_name %></h1>
+                        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></h1>
                     </div>
                     <div class="hidden md:flex items-center space-x-8">
                         <a href="#features" class="hover:text-purple-400 transition font-medium">Features</a>
@@ -62,15 +62,15 @@
                 <div class="absolute bottom-0 right-0 w-96 h-96 bg-pink-500 rounded-full blur-3xl"></div>
             </div>
             <div class="max-w-5xl mx-auto px-4 relative z-10 animate-fade-in">
-                <h1 class="text-6xl md:text-7xl font-black text-white mb-6 leading-tight"><%= serverSettings.server_name %></h1>
-                <p class="text-2xl text-slate-100 mb-12 font-light"><%= serverSettings.status_message %></p>
+                <h1 class="text-6xl md:text-7xl font-black text-white mb-6 leading-tight"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></h1>
+                <p class="text-2xl text-slate-100 mb-12 font-light"><%= serverSettings ? serverSettings.status_message : 'Welcome to our server!' %></p>
                 <div class="bg-slate-900/60 backdrop-blur-xl rounded-2xl p-6 inline-flex items-center gap-6 shadow-2xl border border-purple-500/30">
                     <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                         <i class="fas fa-server text-white text-2xl"></i>
                     </div>
                     <div class="text-left">
                         <p class="text-sm text-slate-400 uppercase tracking-wide mb-1">Server IP</p>
-                        <p class="text-3xl font-mono font-bold text-white"><%= serverSettings.server_ip %></p>
+                        <p class="text-3xl font-mono font-bold text-white"><%= serverSettings ? serverSettings.server_ip : 'play.example.com' %></p>
                         <% if (serverStatus && serverStatus.online) { %>
                             <div class="mt-2 flex items-center gap-2">
                                 <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -525,7 +525,7 @@
             <div class="max-w-7xl mx-auto px-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                     <div>
-                        <h3 class="text-xl font-bold text-white mb-4"><%= serverSettings.server_name %></h3>
+                        <h3 class="text-xl font-bold text-white mb-4"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></h3>
                         <p class="text-slate-400">Join our Minecraft server for an amazing gaming experience!</p>
                     </div>
                     <div>
@@ -539,19 +539,19 @@
                     </div>
                     <div>
                         <h3 class="text-xl font-bold text-white mb-4">Server Info</h3>
-                        <p class="text-slate-400 mb-2"><i class="fas fa-server mr-2"></i><%= serverSettings.server_ip %>:<%= serverSettings.server_port %></p>
+                        <p class="text-slate-400 mb-2"><i class="fas fa-server mr-2"></i><%= serverSettings ? `${serverSettings.server_ip}:${serverSettings.server_port}` : 'play.example.com:25565' %></p>
                         <p class="text-slate-400"><i class="fas fa-users mr-2"></i><%= stats.total_players.toLocaleString() %> Total Players</p>
                     </div>
                 </div>
                 <div class="border-t border-purple-500/20 pt-8 text-center text-slate-400">
-                    <p>&copy; <%= new Date().getFullYear() %> <%= serverSettings.server_name %>. All rights reserved.</p>
+                    <p>&copy; <%= new Date().getFullYear() %> <%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %>. All rights reserved.</p>
                 </div>
             </div>
         </footer>
 
         <script>
             function copyIP() {
-                navigator.clipboard.writeText('<%= serverSettings.server_ip %>');
+                navigator.clipboard.writeText('<%= serverSettings ? serverSettings.server_ip : 'play.example.com' %>');
                 const btn = event.target.closest('button');
                 const original = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';

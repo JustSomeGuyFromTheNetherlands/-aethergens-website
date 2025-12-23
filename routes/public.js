@@ -19,6 +19,13 @@ router.get('/', async (req, res) => {
       ORDER BY c.sort_order ASC, r.sort_order ASC
     `);
 
+    // Get features
+    const features = await db.fetchAll(`
+      SELECT * FROM features
+      WHERE active = 1
+      ORDER BY sort_order ASC
+    `);
+
     // Get store items
     const storeItems = await db.fetchAll(`
       SELECT si.*, sc.name as category_name
@@ -70,10 +77,25 @@ router.get('/', async (req, res) => {
       LIMIT 5
     `);
 
+    // Get stats
+    const [statsResult] = await db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM players) as total_players,
+        (SELECT COUNT(*) FROM bans WHERE active = 1) as total_bans
+    `);
+    const stats = {
+      total_players: statsResult[0].total_players || 0,
+      total_bans: statsResult[0].total_bans || 0,
+      online_now: 0 // Will be set from server status if available
+    };
+
     let serverStatus = null;
     if (serverSettings) {
       try {
         serverStatus = await getServerStatus();
+        if (serverStatus && serverStatus.online && serverStatus.players) {
+          stats.online_now = serverStatus.players.online || 0;
+        }
       } catch (error) {
         serverStatus = { online: false, error: 'Query failed' };
       }
@@ -89,7 +111,9 @@ router.get('/', async (req, res) => {
       wallOfShame,
       wallOfFame,
       notifications,
-      changelogEntries
+      changelogEntries,
+      stats,
+      features
     });
   } catch (error) {
     console.error('Homepage error:', error);
@@ -103,7 +127,13 @@ router.get('/', async (req, res) => {
       wallOfShame: [],
       wallOfFame: [],
       notifications: [],
-      changelogEntries: []
+      changelogEntries: [],
+      stats: {
+        total_players: 0,
+        total_bans: 0,
+        online_now: 0
+      },
+      features: []
     });
   }
 });
