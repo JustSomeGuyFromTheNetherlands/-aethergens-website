@@ -312,6 +312,7 @@ router.get('/leaderboard', async (req, res) => {
 // GET /changelog - Public changelog page
 router.get('/changelog', async (req, res) => {
   try {
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const offset = (page - 1) * limit;
@@ -340,6 +341,7 @@ router.get('/changelog', async (req, res) => {
     const stats = statsResult[0];
 
     res.render('changelog', {
+      serverSettings,
       entries,
       currentPage: page,
       totalPages,
@@ -348,7 +350,9 @@ router.get('/changelog', async (req, res) => {
     });
   } catch (error) {
     console.error('Changelog page error:', error);
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
     res.render('changelog', {
+      serverSettings,
       entries: [],
       currentPage: 1,
       totalPages: 1,
@@ -361,6 +365,7 @@ router.get('/changelog', async (req, res) => {
 // GET /blog - Blog listing page
 router.get('/blog', async (req, res) => {
   try {
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
     const page = parseInt(req.query.page) || 1;
     const limit = 12;
     const offset = (page - 1) * limit;
@@ -426,6 +431,7 @@ router.get('/blog', async (req, res) => {
     `);
 
     res.render('blog', {
+      serverSettings,
       posts,
       categories,
       tags,
@@ -439,7 +445,9 @@ router.get('/blog', async (req, res) => {
     });
   } catch (error) {
     console.error('Blog page error:', error);
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
     res.render('blog', {
+      serverSettings,
       posts: [],
       categories: [],
       tags: [],
@@ -457,6 +465,7 @@ router.get('/blog', async (req, res) => {
 // GET /blog/:slug - Individual blog post
 router.get('/blog/:slug', async (req, res) => {
   try {
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
     const [posts] = await db.query(`
       SELECT p.*, c.name as category_name, c.color as category_color, c.slug as category_slug,
              u.username as author_name
@@ -523,6 +532,7 @@ router.get('/blog/:slug', async (req, res) => {
     `, [post.id, post.category_id, post.id]);
 
     res.render('blog-post', {
+      serverSettings,
       post,
       tags,
       comments,
@@ -532,7 +542,8 @@ router.get('/blog/:slug', async (req, res) => {
     });
   } catch (error) {
     console.error('Blog post error:', error);
-    res.status(500).render('error', { error: 'Failed to load blog post' });
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1").catch(() => null);
+    res.status(500).render('error', { error: 'Failed to load blog post', serverSettings });
   }
 });
 
