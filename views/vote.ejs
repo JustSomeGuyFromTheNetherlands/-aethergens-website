@@ -1,48 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vote for Server - <%= serverSettings.server_name %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        body { background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d1b3d 100%); min-height: 100vh; }
-        .card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-        }
-    </style>
-</head>
-<body class="text-white">
-    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20 items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-cube text-white text-xl"></i>
-                    </div>
-                    <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        <%= serverSettings.server_name %>
-                    </h1>
-                </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="/" class="hover:text-purple-400 transition font-medium">Home</a>
-                    <a href="/leaderboard" class="hover:text-purple-400 transition font-medium">Leaderboard</a>
-                    <a href="/vote" class="text-purple-400 font-medium">Vote</a>
-                    <a href="/status" class="hover:text-purple-400 transition font-medium">Status</a>
-                </div>
-                <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow">Admin</a>
-            </div>
-        </div>
-    </nav>
+<%- include('partials/head', { pageTitle: 'Vote for Server', pageDescription: 'Help us grow by voting on these sites! Earn rewards for your support.' }) %>
+<% const currentPage = 'vote'; %>
+<%- include('partials/navbar') %>
 
-    <div class="max-w-7xl mx-auto px-4 py-12">
+<section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
-            <h1 class="text-5xl font-black mb-4">
-                <i class="fas fa-vote-yea text-purple-400 mr-4"></i>
-                Vote for Our Server
+            <h1 class="text-5xl md:text-6xl font-black text-white mb-4">
+                <i class="fas fa-vote-yea text-purple-400 mr-4"></i>Vote for Our Server
             </h1>
             <p class="text-xl text-slate-400">Help us grow by voting on these sites! Earn rewards for your support.</p>
         </div>
@@ -57,7 +21,7 @@
         <!-- Voting Sites Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             <% votingSites.forEach((site, index) => { %>
-                <div class="card p-6 hover:scale-105 transition-all duration-300">
+                <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 card-hover">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
@@ -99,17 +63,17 @@
 
         <!-- Vote Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="card p-6 text-center">
+            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 text-center">
                 <i class="fas fa-chart-line text-3xl text-purple-400 mb-4"></i>
                 <div class="text-3xl font-bold text-white" id="totalVotes"><%= voteStats.totalVotes.toLocaleString() %></div>
                 <p class="text-slate-400">Total Votes This Month</p>
             </div>
-            <div class="card p-6 text-center">
+            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 text-center">
                 <i class="fas fa-users text-3xl text-green-400 mb-4"></i>
                 <div class="text-3xl font-bold text-white" id="uniqueVoters"><%= voteStats.uniqueVoters.toLocaleString() %></div>
                 <p class="text-slate-400">Unique Voters</p>
             </div>
-            <div class="card p-6 text-center">
+            <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 text-center">
                 <i class="fas fa-gift text-3xl text-pink-400 mb-4"></i>
                 <div class="text-3xl font-bold text-white" id="rewardsGiven"><%= voteStats.rewardsGiven.toLocaleString() %></div>
                 <p class="text-slate-400">Rewards Given</p>
@@ -117,14 +81,14 @@
         </div>
 
         <!-- Top Voters -->
-        <div class="card p-6">
-            <h2 class="text-3xl font-bold mb-6 text-center">
+        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20">
+            <h2 class="text-3xl font-bold mb-6 text-center text-white">
                 <i class="fas fa-crown text-yellow-400 mr-2"></i>
                 Top Voters This Month
             </h2>
             <div class="space-y-4">
                 <% topVoters.forEach(voter => { %>
-                    <div class="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                    <div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
                         <div class="flex items-center space-x-4">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
                                 <% if (voter.rank === 1) { %>bg-yellow-500<% } else if (voter.rank === 2) { %>bg-gray-400<% } else if (voter.rank === 3) { %>bg-orange-600<% } else { %>bg-slate-600<% } %>">
@@ -144,61 +108,64 @@
             </div>
         </div>
     </div>
+</section>
 
-    <script>
-        // Simulate vote counts (in real implementation, this would come from server)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Update vote counts with some animation
-            const voteCounts = [23, 18, 31, 15];
-            voteCounts.forEach((count, index) => {
-                setTimeout(() => {
-                    animateNumber(`voteCount${index}`, 0, count, 1000);
-                }, index * 200);
-            });
+<%- include('partials/footer') %>
 
-            animateNumber('totalVotes', 0, <%= voteStats.totalVotes %>, 2000);
-            animateNumber('uniqueVoters', 0, <%= voteStats.uniqueVoters %>, 2000);
-            animateNumber('rewardsGiven', 0, <%= voteStats.rewardsGiven %>, 2000);
+<script>
+    // Simulate vote counts (in real implementation, this would come from server)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update vote counts with some animation
+        const voteCounts = [23, 18, 31, 15];
+        voteCounts.forEach((count, index) => {
+            setTimeout(() => {
+                animateNumber(`voteCount${index}`, 0, count, 1000);
+            }, index * 200);
         });
 
-        function animateNumber(elementId, start, end, duration) {
-            const element = document.getElementById(elementId);
-            if (!element) return;
+        animateNumber('totalVotes', 0, <%= voteStats.totalVotes %>, 2000);
+        animateNumber('uniqueVoters', 0, <%= voteStats.uniqueVoters %>, 2000);
+        animateNumber('rewardsGiven', 0, <%= voteStats.rewardsGiven %>, 2000);
+    });
 
-            const startTime = performance.now();
-            const difference = end - start;
+    function animateNumber(elementId, start, end, duration) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
 
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+        const startTime = performance.now();
+        const difference = end - start;
 
-                const current = Math.floor(start + difference * progress);
-                element.textContent = current.toLocaleString();
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
 
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                }
+            const current = Math.floor(start + difference * progress);
+            element.textContent = current.toLocaleString();
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
             }
-
-            requestAnimationFrame(update);
         }
 
-        function openVoteWindow(siteId, url) {
-            // Open voting site in new window
-            const voteWindow = window.open(url, 'voteWindow', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        requestAnimationFrame(update);
+    }
 
-            // Check if window was closed (user completed vote)
-            const checkClosed = setInterval(() => {
-                if (voteWindow.closed) {
-                    clearInterval(checkClosed);
-                    // In real implementation, you'd verify the vote with the voting site
-                    // For demo, just show success message
-                    setTimeout(() => {
-                        window.location.href = '/vote?site=' + siteId + '&callback=1';
-                    }, 1000);
-                }
-            }, 1000);
-        }
-    </script>
+    function openVoteWindow(siteId, url) {
+        // Open voting site in new window
+        const voteWindow = window.open(url, 'voteWindow', 'width=800,height=600,scrollbars=yes,resizable=yes');
+
+        // Check if window was closed (user completed vote)
+        const checkClosed = setInterval(() => {
+            if (voteWindow.closed) {
+                clearInterval(checkClosed);
+                // In real implementation, you'd verify the vote with the voting site
+                // For demo, just show success message
+                setTimeout(() => {
+                    window.location.href = '/vote?site=' + siteId + '&callback=1';
+                }, 1000);
+            }
+        }, 1000);
+    }
+</script>
 </body>
 </html>

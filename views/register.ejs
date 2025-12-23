@@ -1,45 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - <%= serverSettings.server_name %></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        body { background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #2d1b3d 100%); min-height: 100vh; }
-        .card {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-        }
-    </style>
-</head>
-<body class="text-white">
-    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20 items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-cube text-white text-xl"></i>
-                    </div>
-                    <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        <%= serverSettings.server_name %>
-                    </h1>
-                </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="/" class="hover:text-purple-400 transition font-medium">Home</a>
-                    <a href="/leaderboard" class="hover:text-purple-400 transition font-medium">Leaderboard</a>
-                    <a href="/admin/login" class="hover:text-purple-400 transition font-medium">Login</a>
-                    <a href="/register" class="text-purple-400 font-medium">Register</a>
-                </div>
-                <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow">Admin</a>
-            </div>
-        </div>
-    </nav>
+<%- include('partials/head', { pageTitle: 'Register', pageDescription: 'Create an account to join our community' }) %>
+<% const currentPage = 'register'; %>
+<%- include('partials/navbar') %>
 
-    <div class="max-w-md mx-auto mt-20 px-4">
-        <div class="card p-8">
+<section class="py-16">
+    <div class="max-w-md mx-auto px-4">
+        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/20">
             <div class="text-center mb-8">
                 <i class="fas fa-user-plus text-4xl text-purple-400 mb-4"></i>
                 <h1 class="text-3xl font-bold text-white mb-2">Create Account</h1>
@@ -137,7 +102,8 @@
             </div>
         </div>
     </div>
+</section>
+
+<%- include('partials/footer') %>
 </body>
 </html>
-
-

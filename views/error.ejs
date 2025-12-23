@@ -1,79 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
-    <div class="text-center max-w-2xl mx-auto px-4">
-        <h1 class="text-4xl font-bold mb-4">Error</h1>
-        <p class="text-slate-400 mb-6"><%= error %></p>
-        
-        <% if (error && (error.includes("doesn't exist") || error.includes("Unknown table") || error.includes("Table"))) { %>
-            <div class="bg-yellow-900/50 border border-yellow-500 rounded-lg p-6 mb-6">
-                <h2 class="text-xl font-bold text-yellow-400 mb-2">Database Tables Not Found</h2>
-                <p class="text-slate-300 mb-4">The database tables haven't been created yet. Click the button below to run the installation script.</p>
-                <button onclick="runInstall()" id="installBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold text-white">
-                    <i class="fas fa-database mr-2"></i>Run Installation Script
-                </button>
-                <div id="installOutput" class="mt-4 text-left bg-slate-800 rounded p-4 hidden">
-                    <pre id="installText" class="text-sm text-slate-300 whitespace-pre-wrap"></pre>
+<%- include('partials/head', { pageTitle: 'Error', pageDescription: 'An error occurred' }) %>
+<%- include('partials/navbar') %>
+
+<section class="py-16">
+    <div class="max-w-2xl mx-auto px-4 text-center">
+        <div class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-12 border border-purple-500/20">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-400 mb-4"></i>
+            <h1 class="text-4xl font-bold mb-4 text-white">Error</h1>
+            <p class="text-slate-400 mb-6 text-lg"><%= error %></p>
+            
+            <% if (error && (error.includes("doesn't exist") || error.includes("Unknown table") || error.includes("Table"))) { %>
+                <div class="bg-yellow-900/50 border border-yellow-500 rounded-lg p-6 mb-6 text-left">
+                    <h2 class="text-xl font-bold text-yellow-400 mb-2">Database Tables Not Found</h2>
+                    <p class="text-slate-300 mb-4">The database tables haven't been created yet. Click the button below to run the installation script.</p>
+                    <button onclick="runInstall()" id="installBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold text-white transition-all">
+                        <i class="fas fa-database mr-2"></i>Run Installation Script
+                    </button>
+                    <div id="installOutput" class="mt-4 text-left bg-slate-900 rounded p-4 hidden">
+                        <pre id="installText" class="text-sm text-slate-300 whitespace-pre-wrap"></pre>
+                    </div>
                 </div>
+            <% } %>
+            
+            <div class="flex gap-4 justify-center">
+                <a href="/" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold transition-all">Go Home</a>
+                <a href="/database/install" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg font-semibold transition-all">Installation Page</a>
             </div>
-        <% } %>
-        
-        <div class="flex gap-4 justify-center">
-            <a href="/" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded">Go Home</a>
-            <a href="/database/install" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded">Installation Page</a>
         </div>
     </div>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
-    <script>
-        async function runInstall() {
-            const btn = document.getElementById('installBtn');
-            const output = document.getElementById('installOutput');
-            const text = document.getElementById('installText');
+</section>
+
+<%- include('partials/footer') %>
+
+<script>
+    async function runInstall() {
+        const btn = document.getElementById('installBtn');
+        const output = document.getElementById('installOutput');
+        const text = document.getElementById('installText');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Installing...';
+        output.classList.remove('hidden');
+        text.textContent = 'Starting installation...\n\n';
+        
+        try {
+            const response = await fetch('/api/install');
+            const result = await response.text();
             
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Installing...';
-            output.classList.remove('hidden');
-            text.textContent = 'Starting installation...\n\n';
+            text.textContent = result;
             
-            try {
-                const response = await fetch('/api/install');
-                const result = await response.text();
+            if (result.includes('Installation complete') || result.includes('✓ Installation complete')) {
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Installation Complete!';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-green-500');
                 
-                text.textContent = result;
-                
-                if (result.includes('Installation complete') || result.includes('✓ Installation complete')) {
-                    btn.innerHTML = '<i class="fas fa-check mr-2"></i>Installation Complete!';
-                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    btn.classList.add('bg-green-500');
-                    
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                } else if (result.includes('✗') || result.includes('Error')) {
-                    btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Installation Failed';
-                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    btn.classList.add('bg-red-600');
-                    btn.disabled = false;
-                } else {
-                    btn.innerHTML = '<i class="fas fa-database mr-2"></i>Run Installation Script';
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                text.textContent += '\n\nError: ' + error.message;
-                btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Error Occurred';
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else if (result.includes('✗') || result.includes('Error')) {
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Installation Failed';
                 btn.classList.remove('bg-green-600', 'hover:bg-green-700');
                 btn.classList.add('bg-red-600');
                 btn.disabled = false;
+            } else {
+                btn.innerHTML = '<i class="fas fa-database mr-2"></i>Run Installation Script';
+                btn.disabled = false;
             }
+        } catch (error) {
+            text.textContent += '\n\nError: ' + error.message;
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Error Occurred';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-red-600');
+            btn.disabled = false;
         }
-    </script>
+    }
+</script>
 </body>
 </html>
-

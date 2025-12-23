@@ -1,0 +1,69 @@
+<% const navCurrentPage = typeof currentPage !== 'undefined' ? currentPage : (typeof navPage !== 'undefined' ? navPage : ''); %>
+<nav class="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-20 items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-cube text-white text-xl"></i>
+                </div>
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hover:opacity-80 transition">
+                    <%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %>
+                </a>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="/" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'home' ? 'text-purple-400' : '' %>">Home</a>
+                <a href="/status" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'status' ? 'text-purple-400' : '' %>">Status</a>
+                <a href="/leaderboard" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'leaderboard' ? 'text-purple-400' : '' %>">Leaderboard</a>
+                <a href="/shop" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'shop' ? 'text-purple-400' : '' %>">Shop</a>
+                <a href="/blog" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'blog' ? 'text-purple-400' : '' %>"><i class="fas fa-blog mr-1"></i>Blog</a>
+                <a href="/changelog" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'changelog' ? 'text-purple-400' : '' %>"><i class="fas fa-history mr-1"></i>Changelog</a>
+                <a href="/vote" class="hover:text-purple-400 transition font-medium <%= navCurrentPage === 'vote' ? 'text-purple-400' : '' %>">Vote</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg glow hidden md:block">Admin</a>
+                <button id="mobile-menu-btn" class="md:hidden text-slate-200 hover:text-purple-400 transition p-2">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-purple-500/20 mt-2 pt-4">
+            <div class="flex flex-col space-y-3">
+                <a href="/" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'home' ? 'text-purple-400' : '' %>">Home</a>
+                <a href="/status" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'status' ? 'text-purple-400' : '' %>">Status</a>
+                <a href="/leaderboard" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'leaderboard' ? 'text-purple-400' : '' %>">Leaderboard</a>
+                <a href="/shop" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'shop' ? 'text-purple-400' : '' %>">Shop</a>
+                <a href="/blog" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'blog' ? 'text-purple-400' : '' %>"><i class="fas fa-blog mr-1"></i>Blog</a>
+                <a href="/changelog" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'changelog' ? 'text-purple-400' : '' %>"><i class="fas fa-history mr-1"></i>Changelog</a>
+                <a href="/vote" class="hover:text-purple-400 transition font-medium py-2 <%= navCurrentPage === 'vote' ? 'text-purple-400' : '' %>">Vote</a>
+                <a href="/admin" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-lg font-semibold shadow-lg text-center mt-2">Admin</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    // Mobile menu toggle - only run if button exists
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', function() {
+                const menu = document.getElementById('mobile-menu');
+                if (menu) {
+                    menu.classList.toggle('hidden');
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        if (menu.classList.contains('hidden')) {
+                            icon.classList.remove('fa-times');
+                            icon.classList.add('fa-bars');
+                        } else {
+                            icon.classList.remove('fa-bars');
+                            icon.classList.add('fa-times');
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+

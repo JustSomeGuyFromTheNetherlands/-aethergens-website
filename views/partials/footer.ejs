@@ -1,0 +1,38 @@
+<footer class="bg-slate-900/80 border-t border-purple-500/20 py-12 mt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+                <h3 class="text-xl font-bold text-white mb-4"><%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %></h3>
+                <p class="text-slate-400">Join our Minecraft server for an amazing gaming experience!</p>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white mb-4">Quick Links</h3>
+                <ul class="space-y-2">
+                    <li><a href="/vote" class="text-slate-400 hover:text-purple-400 transition">Vote</a></li>
+                    <li><a href="/leaderboard" class="text-slate-400 hover:text-purple-400 transition">Leaderboard</a></li>
+                    <li><a href="/status" class="text-slate-400 hover:text-purple-400 transition">Status</a></li>
+                    <li><a href="/shop" class="text-slate-400 hover:text-purple-400 transition">Shop</a></li>
+                    <li><a href="/blog" class="text-slate-400 hover:text-purple-400 transition">Blog</a></li>
+                    <li><a href="/changelog" class="text-slate-400 hover:text-purple-400 transition">Changelog</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white mb-4">Server Info</h3>
+                <p class="text-slate-400 mb-2">
+                    <i class="fas fa-server mr-2"></i>
+                    <%= serverSettings ? `${serverSettings.server_ip || 'play.example.com'}:${serverSettings.server_port || '25565'}` : 'play.example.com:25565' %>
+                </p>
+                <% if (typeof stats !== 'undefined' && stats) { %>
+                    <p class="text-slate-400">
+                        <i class="fas fa-users mr-2"></i>
+                        <%= stats.total_players ? stats.total_players.toLocaleString() : '0' %> Total Players
+                    </p>
+                <% } %>
+            </div>
+        </div>
+        <div class="border-t border-purple-500/20 pt-8 text-center text-slate-400">
+            <p>&copy; <%= new Date().getFullYear() %> <%= serverSettings ? serverSettings.server_name : 'Minecraft Server' %>. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+
