@@ -1,0 +1,244 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <a href="/admin/blog/posts/new" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Post
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Published Posts</h6>
+                  <h4 class="mb-0 text-success"><%= stats.published_posts %></h4>
+                </div>
+                <div class="text-success">
+                  <i class="fas fa-file-alt fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Draft Posts</h6>
+                  <h4 class="mb-0 text-warning"><%= stats.draft_posts %></h4>
+                </div>
+                <div class="text-warning">
+                  <i class="fas fa-edit fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Pending Comments</h6>
+                  <h4 class="mb-0 text-info"><%= stats.pending_comments %></h4>
+                </div>
+                <div class="text-info">
+                  <i class="fas fa-comments fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Categories</h6>
+                  <h4 class="mb-0 text-primary"><%= stats.active_categories %></h4>
+                </div>
+                <div class="text-primary">
+                  <i class="fas fa-folder fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <a href="/admin/blog/posts/new" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                    New Post
+                  </a>
+                </div>
+                <div class="col-md-3">
+                  <a href="/admin/blog/categories" class="btn btn-outline-success w-100">
+                    <i class="fas fa-folder-plus fa-2x mb-2"></i><br>
+                    Manage Categories
+                  </a>
+                </div>
+                <div class="col-md-3">
+                  <a href="/admin/blog/comments" class="btn btn-outline-warning w-100">
+                    <i class="fas fa-comments fa-2x mb-2"></i><br>
+                    Moderate Comments
+                  </a>
+                </div>
+                <div class="col-md-3">
+                  <a href="/blog" class="btn btn-outline-info w-100" target="_blank">
+                    <i class="fas fa-eye fa-2x mb-2"></i><br>
+                    View Blog
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Posts -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Recent Posts</h5>
+            </div>
+            <div class="card-body">
+              <% if (recentPosts.length === 0) { %>
+                <p class="text-muted mb-0">No posts yet. <a href="/admin/blog/posts/new">Create your first post</a>.</p>
+              <% } else { %>
+                <div class="list-group list-group-flush">
+                  <% recentPosts.forEach(post => { %>
+                    <div class="list-group-item px-0">
+                      <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">
+                          <a href="/blog/<%= post.slug %>" target="_blank" class="text-decoration-none">
+                            <%= post.title %>
+                          </a>
+                        </h6>
+                        <small class="text-muted">
+                          <% if (post.status === 'published') { %>
+                            <span class="badge bg-success">Published</span>
+                          <% } else if (post.status === 'draft') { %>
+                            <span class="badge bg-warning">Draft</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><%= post.status %></span>
+                          <% } %>
+                        </small>
+                      </div>
+                      <small class="text-muted">
+                        <%= new Date(post.created_at).toLocaleDateString() %>
+                        <a href="/admin/blog/posts/<%= post.id %>/edit" class="ms-2">
+                          <i class="fas fa-edit"></i> Edit
+                        </a>
+                      </small>
+                    </div>
+                  <% }); %>
+                </div>
+                <div class="mt-3">
+                  <a href="/admin/blog/posts" class="btn btn-sm btn-outline-primary">View All Posts</a>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Comments -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Recent Comments</h5>
+            </div>
+            <div class="card-body">
+              <% if (recentComments.length === 0) { %>
+                <p class="text-muted mb-0">No comments yet.</p>
+              <% } else { %>
+                <div class="list-group list-group-flush">
+                  <% recentComments.forEach(comment => { %>
+                    <div class="list-group-item px-0">
+                      <div class="d-flex w-100 justify-content-between">
+                        <div>
+                          <strong class="mb-1"><%= comment.author_name %></strong>
+                          <p class="mb-1 text-truncate"><%= comment.content.substring(0, 50) %>...</p>
+                          <small class="text-muted">
+                            On: <%= comment.post_title %>
+                          </small>
+                        </div>
+                        <small class="text-muted">
+                          <% if (comment.status === 'pending') { %>
+                            <span class="badge bg-warning">Pending</span>
+                          <% } else if (comment.status === 'approved') { %>
+                            <span class="badge bg-success">Approved</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><%= comment.status %></span>
+                          <% } %>
+                        </small>
+                      </div>
+                      <small class="text-muted">
+                        <%= new Date(comment.created_at).toLocaleDateString() %>
+                      </small>
+                    </div>
+                  <% }); %>
+                </div>
+                <div class="mt-3">
+                  <a href="/admin/blog/comments" class="btn btn-sm btn-outline-primary">Moderate Comments</a>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Views & Comments Stats -->
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body text-center">
+              <i class="fas fa-eye fa-3x text-info mb-3"></i>
+              <h4 class="text-info"><%= stats.total_views || 0 %></h4>
+              <p class="text-muted mb-0">Total Post Views</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body text-center">
+              <i class="fas fa-comment fa-3x text-success mb-3"></i>
+              <h4 class="text-success"><%= stats.approved_comments || 0 %></h4>
+              <p class="text-muted mb-0">Approved Comments</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

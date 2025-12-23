@@ -1,0 +1,263 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="dropdown me-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="fas fa-filter"></i> Status: <%= filters.status === 'all' ? 'All' : filters.status.charAt(0).toUpperCase() + filters.status.slice(1) %>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item <%= filters.status === 'all' ? 'active' : '' %>" href="?status=all<%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">All Posts</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'published' ? 'active' : '' %>" href="?status=published<%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">Published</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'draft' ? 'active' : '' %>" href="?status=draft<%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">Draft</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'archived' ? 'active' : '' %>" href="?status=archived<%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">Archived</a></li>
+            </ul>
+          </div>
+
+          <div class="dropdown me-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="fas fa-folder"></i> Category: <%= filters.category === 'all' ? 'All' : categories.find(c => c.id == filters.category)?.name || 'Unknown' %>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item <%= filters.category === 'all' ? 'active' : '' %>" href="?category=all<%= filters.status !== 'all' ? `&status=${filters.status}` : '' %>">All Categories</a></li>
+              <% categories.forEach(category => { %>
+                <li><a class="dropdown-item <%= filters.category == category.id ? 'active' : '' %>" href="?category=<%= category.id %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %>"><%= category.name %></a></li>
+              <% }); %>
+            </ul>
+          </div>
+
+          <a href="/admin/blog/posts/new" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Post
+          </a>
+        </div>
+      </div>
+
+      <!-- Posts Table -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Blog Posts (<%= total %>)</h5>
+        </div>
+        <div class="card-body">
+          <% if (posts.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No posts found</h5>
+              <p class="text-muted">
+                <% if (filters.status !== 'all' || filters.category !== 'all') { %>
+                  No posts found matching your filters.
+                  <a href="/admin/blog/posts">Clear filters</a>
+                <% } else { %>
+                  Create your first blog post to get started.
+                <% } %>
+              </p>
+              <a href="/admin/blog/posts/new" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create First Post
+              </a>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover" id="postsTable">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Views</th>
+                    <th>Comments</th>
+                    <th>Published</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% posts.forEach(post => { %>
+                    <tr>
+                      <td>
+                        <div>
+                          <strong>
+                            <a href="/blog/<%= post.slug %>" target="_blank" class="text-decoration-none">
+                              <%= post.title %>
+                            </a>
+                          </strong>
+                          <% if (post.excerpt) { %>
+                            <br><small class="text-muted"><%= post.excerpt.substring(0, 80) %>...</small>
+                          <% } %>
+                        </div>
+                      </td>
+                      <td><%= post.author_name || 'Unknown' %></td>
+                      <td>
+                        <% if (post.category_name) { %>
+                          <span class="badge" style="background-color: <%= post.category_color %>20; color: <%= post.category_color %>;">
+                            <%= post.category_name %>
+                          </span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">Uncategorized</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (post.status === 'published') { %>
+                          <span class="badge bg-success">Published</span>
+                        <% } else if (post.status === 'draft') { %>
+                          <span class="badge bg-warning">Draft</span>
+                        <% } else if (post.status === 'archived') { %>
+                          <span class="badge bg-secondary">Archived</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <span class="badge bg-info">
+                          <i class="fas fa-eye me-1"></i><%= post.views || 0 %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge bg-primary">
+                          <i class="fas fa-comment me-1"></i><%= post.comment_count || 0 %>
+                        </span>
+                      </td>
+                      <td>
+                        <% if (post.published_at) { %>
+                          <%= new Date(post.published_at).toLocaleDateString() %>
+                        <% } else if (post.status === 'published') { %>
+                          <%= new Date(post.created_at).toLocaleDateString() %>
+                        <% } else { %>
+                          <em class="text-muted">Not published</em>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <a href="/admin/blog/posts/<%= post.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                          <a href="/blog/<%= post.slug %>" target="_blank" class="btn btn-sm btn-outline-info" title="View">
+                            <i class="fas fa-eye"></i>
+                          </a>
+                          <button class="btn btn-sm btn-outline-danger delete-post"
+                                  data-id="<%= post.id %>"
+                                  data-title="<%= post.title %>"
+                                  title="Delete">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+              <nav aria-label="Posts pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                  <% if (currentPage > 1) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage - 1 %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %><%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">
+                        <i class="fas fa-chevron-left"></i> Previous
+                      </a>
+                    </li>
+                  <% } %>
+
+                  <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                      <a class="page-link" href="?page=<%= i %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %><%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>"><%= i %></a>
+                    </li>
+                  <% } %>
+
+                  <% if (currentPage < totalPages) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage + 1 %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %><%= filters.category !== 'all' ? `&category=${filters.category}` : '' %>">
+                        Next <i class="fas fa-chevron-right"></i>
+                      </a>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Blog Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the blog post "<strong id="deleteTitle"></strong>"?</p>
+        <p class="text-warning">This will also delete all associated comments.</p>
+        <p class="text-danger">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Delete post
+  let deletePostId = null;
+
+  document.querySelectorAll('.delete-post').forEach(btn => {
+    btn.addEventListener('click', function() {
+      deletePostId = this.dataset.id;
+      document.getElementById('deleteTitle').textContent = this.dataset.title;
+      new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    });
+  });
+
+  document.getElementById('confirmDelete').addEventListener('click', async function() {
+    if (!deletePostId) return;
+
+    try {
+      const response = await fetch(`/admin/blog/posts/${deletePostId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Delete post error:', error);
+      alert('Failed to delete blog post');
+    }
+  });
+
+  // Initialize DataTable
+  $('#postsTable').DataTable({
+    "pageLength": 25,
+    "order": [[ 6, "desc" ]], // Sort by published date descending
+    "columnDefs": [
+      { "orderable": false, "targets": [0, 7] } // Title and Actions columns not sortable
+    ]
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

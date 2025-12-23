@@ -1,0 +1,433 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus"></i> Add Category
+          </button>
+        </div>
+      </div>
+
+      <!-- Categories Table -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Blog Categories</h5>
+        </div>
+        <div class="card-body">
+          <% if (categories.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="fas fa-folder fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No categories yet</h5>
+              <p class="text-muted">Create your first category to organize your blog posts.</p>
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="fas fa-plus"></i> Add First Category
+              </button>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover" id="categoriesTable">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Description</th>
+                    <th>Icon</th>
+                    <th>Posts</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% categories.forEach(category => { %>
+                    <tr>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <div class="me-2" style="color: <%= category.color %>;">
+                            <i class="<%= category.icon %>"></i>
+                          </div>
+                          <strong><%= category.name %></strong>
+                        </div>
+                      </td>
+                      <td><code><%= category.slug %></code></td>
+                      <td>
+                        <% if (category.description) { %>
+                          <%= category.description.length > 50 ? category.description.substring(0, 50) + '...' : category.description %>
+                        <% } else { %>
+                          <em class="text-muted">No description</em>
+                        <% } %>
+                      </td>
+                      <td>
+                        <i class="<%= category.icon %>"></i> <%= category.icon %>
+                      </td>
+                      <td>
+                        <span class="badge bg-info"><%= category.post_count %></span>
+                      </td>
+                      <td>
+                        <% if (category.active) { %>
+                          <span class="badge bg-success">Active</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">Inactive</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-sm btn-outline-primary edit-category"
+                                  data-id="<%= category.id %>"
+                                  data-name="<%= category.name %>"
+                                  data-slug="<%= category.slug %>"
+                                  data-description="<%= category.description || '' %>"
+                                  data-color="<%= category.color %>"
+                                  data-icon="<%= category.icon %>"
+                                  data-sort-order="<%= category.sort_order %>"
+                                  data-active="<%= category.active %>">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <% if (category.post_count === 0) { %>
+                            <button class="btn btn-sm btn-outline-danger delete-category"
+                                    data-id="<%= category.id %>"
+                                    data-name="<%= category.name %>">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          <% } else { %>
+                            <button class="btn btn-sm btn-outline-secondary" disabled title="Cannot delete category with posts">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addCategoryForm">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="categoryName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="categorySlug" class="form-label">Slug</label>
+            <input type="text" class="form-control" id="categorySlug" name="slug">
+            <div class="form-text">Leave empty to auto-generate from name</div>
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="categoryDescription" name="description" rows="3"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="categoryColor" class="form-label">Color</label>
+                <input type="color" class="form-control" id="categoryColor" name="color" value="#667eea">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="categoryIcon" class="form-label">Icon</label>
+                <select class="form-select" id="categoryIcon" name="icon">
+                  <option value="fas fa-folder">📁 Folder</option>
+                  <option value="fas fa-newspaper">📰 Newspaper</option>
+                  <option value="fas fa-sync-alt">🔄 Sync</option>
+                  <option value="fas fa-calendar-alt">📅 Calendar</option>
+                  <option value="fas fa-graduation-cap">🎓 Graduation Cap</option>
+                  <option value="fas fa-users">👥 Users</option>
+                  <option value="fas fa-gamepad">🎮 Gamepad</option>
+                  <option value="fas fa-code">💻 Code</option>
+                  <option value="fas fa-palette">🎨 Palette</option>
+                  <option value="fas fa-music">🎵 Music</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="categorySortOrder" class="form-label">Sort Order</label>
+                <input type="number" class="form-control" id="categorySortOrder" name="sort_order" value="0">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="categoryActive" name="active" value="1" checked>
+                  <label class="form-check-label" for="categoryActive">
+                    Active
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveCategory">Save Category</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editCategoryForm">
+          <input type="hidden" id="editCategoryId" name="id">
+          <div class="mb-3">
+            <label for="editCategoryName" class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editCategoryName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label for="editCategorySlug" class="form-label">Slug</label>
+            <input type="text" class="form-control" id="editCategorySlug" name="slug">
+            <div class="form-text">Leave empty to auto-generate from name</div>
+          </div>
+          <div class="mb-3">
+            <label for="editCategoryDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="editCategoryDescription" name="description" rows="3"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="editCategoryColor" class="form-label">Color</label>
+                <input type="color" class="form-control" id="editCategoryColor" name="color">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="editCategoryIcon" class="form-label">Icon</label>
+                <select class="form-select" id="editCategoryIcon" name="icon">
+                  <option value="fas fa-folder">📁 Folder</option>
+                  <option value="fas fa-newspaper">📰 Newspaper</option>
+                  <option value="fas fa-sync-alt">🔄 Sync</option>
+                  <option value="fas fa-calendar-alt">📅 Calendar</option>
+                  <option value="fas fa-graduation-cap">🎓 Graduation Cap</option>
+                  <option value="fas fa-users">👥 Users</option>
+                  <option value="fas fa-gamepad">🎮 Gamepad</option>
+                  <option value="fas fa-code">💻 Code</option>
+                  <option value="fas fa-palette">🎨 Palette</option>
+                  <option value="fas fa-music">🎵 Music</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="editCategorySortOrder" class="form-label">Sort Order</label>
+                <input type="number" class="form-control" id="editCategorySortOrder" name="sort_order">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="editCategoryActive" name="active" value="1">
+                  <label class="form-check-label" for="editCategoryActive">
+                    Active
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="updateCategory">Update Category</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the category "<strong id="deleteCategoryName"></strong>"?</p>
+        <p class="text-danger">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-generate slug from name
+  function setupSlugAutoGeneration(nameField, slugField) {
+    nameField.addEventListener('input', function() {
+      if (!slugField.value) {
+        const slug = this.value.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim();
+        slugField.value = slug;
+      }
+    });
+  }
+
+  setupSlugAutoGeneration(document.getElementById('categoryName'), document.getElementById('categorySlug'));
+  setupSlugAutoGeneration(document.getElementById('editCategoryName'), document.getElementById('editCategorySlug'));
+
+  // Add category
+  document.getElementById('saveCategory').addEventListener('click', async function() {
+    const formData = new FormData(document.getElementById('addCategoryForm'));
+    const data = Object.fromEntries(formData);
+
+    try {
+      const response = await fetch('/admin/blog/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Add category error:', error);
+      alert('Failed to add category');
+    }
+  });
+
+  // Edit category
+  document.querySelectorAll('.edit-category').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const data = this.dataset;
+      document.getElementById('editCategoryId').value = data.id;
+      document.getElementById('editCategoryName').value = data.name;
+      document.getElementById('editCategorySlug').value = data.slug;
+      document.getElementById('editCategoryDescription').value = data.description;
+      document.getElementById('editCategoryColor').value = data.color;
+      document.getElementById('editCategoryIcon').value = data.icon;
+      document.getElementById('editCategorySortOrder').value = data.sortOrder;
+      document.getElementById('editCategoryActive').checked = data.active === '1';
+
+      new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+    });
+  });
+
+  document.getElementById('updateCategory').addEventListener('click', async function() {
+    const formData = new FormData(document.getElementById('editCategoryForm'));
+    const data = Object.fromEntries(formData);
+    const categoryId = data.id;
+
+    delete data.id;
+
+    try {
+      const response = await fetch(`/admin/blog/categories/${categoryId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Update category error:', error);
+      alert('Failed to update category');
+    }
+  });
+
+  // Delete category
+  let deleteCategoryId = null;
+
+  document.querySelectorAll('.delete-category').forEach(btn => {
+    btn.addEventListener('click', function() {
+      deleteCategoryId = this.dataset.id;
+      document.getElementById('deleteCategoryName').textContent = this.dataset.name;
+      new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    });
+  });
+
+  document.getElementById('confirmDelete').addEventListener('click', async function() {
+    if (!deleteCategoryId) return;
+
+    try {
+      const response = await fetch(`/admin/blog/categories/${deleteCategoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Delete category error:', error);
+      alert('Failed to delete category');
+    }
+  });
+
+  // Initialize DataTable
+  $('#categoriesTable').DataTable({
+    "pageLength": 25,
+    "order": [[ 6, "asc" ]], // Sort by sort order
+    "columnDefs": [
+      { "orderable": false, "targets": [3, 6] } // Icon and Actions columns not sortable
+    ]
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

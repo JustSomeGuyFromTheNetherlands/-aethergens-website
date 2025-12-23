@@ -1,0 +1,358 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="fas fa-filter"></i> Filter: <%= filters.status === 'all' ? 'All Comments' : filters.status.charAt(0).toUpperCase() + filters.status.slice(1) %>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item <%= filters.status === 'all' ? 'active' : '' %>" href="?status=all">All Comments</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'pending' ? 'active' : '' %>" href="?status=pending">Pending</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'approved' ? 'active' : '' %>" href="?status=approved">Approved</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'spam' ? 'active' : '' %>" href="?status=spam">Spam</a></li>
+              <li><a class="dropdown-item <%= filters.status === 'trash' ? 'active' : '' %>" href="?status=trash">Trash</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Table -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Comments</h5>
+        </div>
+        <div class="card-body">
+          <% if (comments.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No comments found</h5>
+              <p class="text-muted">
+                <% if (filters.status !== 'all') { %>
+                  No <%= filters.status %> comments found.
+                  <a href="?status=all">View all comments</a>
+                <% } else { %>
+                  Comments will appear here once visitors start commenting on your posts.
+                <% } %>
+              </p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover" id="commentsTable">
+                <thead>
+                  <tr>
+                    <th>Author</th>
+                    <th>Comment</th>
+                    <th>Post</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% comments.forEach(comment => { %>
+                    <tr>
+                      <td>
+                        <div>
+                          <strong><%= comment.author_name %></strong>
+                          <% if (comment.author_email) { %>
+                            <br><small class="text-muted"><%= comment.author_email %></small>
+                          <% } %>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="comment-content">
+                          <%= comment.content.length > 100 ? comment.content.substring(0, 100) + '...' : comment.content %>
+                        </div>
+                        <% if (comment.parent_id) { %>
+                          <small class="text-muted"><i class="fas fa-reply"></i> Reply</small>
+                        <% } %>
+                      </td>
+                      <td>
+                        <a href="/blog/<%= comment.post_slug %>" target="_blank">
+                          <%= comment.post_title %>
+                        </a>
+                      </td>
+                      <td>
+                        <% if (comment.status === 'pending') { %>
+                          <span class="badge bg-warning">Pending</span>
+                        <% } else if (comment.status === 'approved') { %>
+                          <span class="badge bg-success">Approved</span>
+                        <% } else if (comment.status === 'spam') { %>
+                          <span class="badge bg-danger">Spam</span>
+                        <% } else if (comment.status === 'trash') { %>
+                          <span class="badge bg-secondary">Trash</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <%= new Date(comment.created_at).toLocaleDateString() %>
+                        <br><small class="text-muted">
+                          <%= new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
+                        </small>
+                      </td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <% if (comment.status !== 'approved') { %>
+                            <button class="btn btn-sm btn-outline-success approve-comment"
+                                    data-id="<%= comment.id %>"
+                                    title="Approve">
+                              <i class="fas fa-check"></i>
+                            </button>
+                          <% } %>
+
+                          <% if (comment.status !== 'spam') { %>
+                            <button class="btn btn-sm btn-outline-warning mark-spam"
+                                    data-id="<%= comment.id %>"
+                                    title="Mark as Spam">
+                              <i class="fas fa-exclamation-triangle"></i>
+                            </button>
+                          <% } %>
+
+                          <% if (comment.status !== 'trash') { %>
+                            <button class="btn btn-sm btn-outline-secondary move-trash"
+                                    data-id="<%= comment.id %>"
+                                    title="Move to Trash">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          <% } %>
+
+                          <button class="btn btn-sm btn-outline-danger delete-comment"
+                                  data-id="<%= comment.id %>"
+                                  data-author="<%= comment.author_name %>"
+                                  title="Delete Permanently">
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+              <nav aria-label="Comments pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                  <% if (currentPage > 1) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage - 1 %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %>">
+                        <i class="fas fa-chevron-left"></i> Previous
+                      </a>
+                    </li>
+                  <% } %>
+
+                  <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                      <a class="page-link" href="?page=<%= i %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %>"><%= i %></a>
+                    </li>
+                  <% } %>
+
+                  <% if (currentPage < totalPages) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage + 1 %><%= filters.status !== 'all' ? `&status=${filters.status}` : '' %>">
+                        Next <i class="fas fa-chevron-right"></i>
+                      </a>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Comment Detail Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Comment Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="mb-3">
+              <label class="form-label">Author</label>
+              <div><strong id="modalAuthor"></strong></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <div id="modalEmail"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Comment</label>
+              <div id="modalContent" class="border p-3 rounded"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Post</label>
+              <div><a href="#" id="modalPostLink" target="_blank"></a></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <div id="modalStatus"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date</label>
+              <div id="modalDate"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">IP Address</label>
+              <div id="modalIP"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">User Agent</label>
+              <div id="modalUserAgent" class="small text-muted"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div id="modalActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Comment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to permanently delete this comment by <strong id="deleteAuthor"></strong>?</p>
+        <p class="text-danger">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete Permanently</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Status update functions
+  async function updateCommentStatus(commentId, status) {
+    try {
+      const response = await fetch(`/admin/blog/comments/${commentId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Status update error:', error);
+      alert('Failed to update comment status');
+    }
+  }
+
+  // Approve comment
+  document.querySelectorAll('.approve-comment').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const commentId = this.dataset.id;
+      if (confirm('Are you sure you want to approve this comment?')) {
+        updateCommentStatus(commentId, 'approved');
+      }
+    });
+  });
+
+  // Mark as spam
+  document.querySelectorAll('.mark-spam').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const commentId = this.dataset.id;
+      if (confirm('Are you sure you want to mark this comment as spam?')) {
+        updateCommentStatus(commentId, 'spam');
+      }
+    });
+  });
+
+  // Move to trash
+  document.querySelectorAll('.move-trash').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const commentId = this.dataset.id;
+      if (confirm('Are you sure you want to move this comment to trash?')) {
+        updateCommentStatus(commentId, 'trash');
+      }
+    });
+  });
+
+  // Delete comment
+  let deleteCommentId = null;
+
+  document.querySelectorAll('.delete-comment').forEach(btn => {
+    btn.addEventListener('click', function() {
+      deleteCommentId = this.dataset.id;
+      document.getElementById('deleteAuthor').textContent = this.dataset.author;
+      new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    });
+  });
+
+  document.getElementById('confirmDelete').addEventListener('click', async function() {
+    if (!deleteCommentId) return;
+
+    try {
+      const response = await fetch(`/admin/blog/comments/${deleteCommentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Delete comment error:', error);
+      alert('Failed to delete comment');
+    }
+  });
+
+  // Initialize DataTable
+  $('#commentsTable').DataTable({
+    "pageLength": 25,
+    "order": [[ 4, "desc" ]], // Sort by date descending
+    "columnDefs": [
+      { "orderable": false, "targets": [1, 5] } // Comment content and Actions columns not sortable
+    ]
+  });
+});
+</script>
+
+<%- include('partials/footer') %>
