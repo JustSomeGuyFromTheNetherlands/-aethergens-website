@@ -1,6 +1,56 @@
 # AetherGens CMS - Node.js Edition
 
-Minecraft Server CMS rewritten in Node.js/Express.js
+A full-featured Minecraft Server CMS rewritten in Node.js/Express.js with Joomla-like content management capabilities.
+
+## Features
+
+### Core Features
+- **Express.js web framework** with modern architecture
+- **MySQL database** with connection pooling
+- **Session-based authentication** with security middleware
+- **Rate limiting** and comprehensive security headers
+- **Real-time Minecraft server status** via mcstatus.io API
+- **Automatic player tracking** with detailed statistics
+- **RCON integration** for server management
+- **Discord webhooks** and email integration
+
+### Content Management System (CMS)
+- **Blog System**: Full-featured blog with posts, categories, tags, and comments
+- **Changelog Management**: Track version updates and release notes
+- **Content Categories**: Organize content with custom categories
+- **SEO Optimization**: Meta titles, descriptions, and keywords
+- **Rich Text Content**: Support for formatted blog posts
+- **Comment System**: User comments with moderation
+- **Tag System**: Organize content with tags and filters
+
+### Admin Panel Features
+- **Dashboard**: Comprehensive admin dashboard with statistics
+- **User Management**: Admin user accounts with role-based access
+- **Player Management**: Detailed player statistics and moderation
+- **Ban Management**: Advanced ban system with IP ban support
+- **News Management**: Create and manage server announcements
+- **Store Management**: In-game store with categories and items
+- **Settings Management**: Server configuration and customization
+- **Analytics**: Server performance and player analytics
+- **API Key Management**: Secure API key generation
+- **Backup Management**: Server backup utilities
+- **File Manager**: Server file management interface
+- **Console Access**: Web-based server console
+- **Webhook Management**: Discord webhook configuration
+- **Social Links**: Manage social media links
+- **Wall of Fame**: Community recognition system
+
+### Public Features
+- **Server Status**: Real-time server monitoring
+- **Player Leaderboards**: Top players by various metrics
+- **Voting System**: Multiple voting site integration
+- **Application System**: Staff application management
+- **Store Interface**: Browse and purchase in-game items
+- **News Feed**: Latest server announcements
+- **Changelog**: Version history and updates
+- **Blog**: Community blog with articles and tutorials
+- **Registration**: User account creation
+- **Appeal System**: Ban appeal submissions
 
 ## Installation
 

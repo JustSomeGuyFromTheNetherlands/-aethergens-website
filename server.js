@@ -119,12 +119,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const PORT = config.port;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${config.env}`);
-});
-
+// Export app for Vercel serverless deployment
 module.exports = app;
+
+// For local development
+if (require.main === module) {
+  const PORT = process.env.PORT || config.port || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || config.env}`);
+  });
+}
 

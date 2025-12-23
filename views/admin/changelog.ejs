@@ -1,0 +1,258 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <a href="/admin/changelog/new" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Entry
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Total Entries</h6>
+                  <h4 class="mb-0 text-primary"><%= stats.total_entries %></h4>
+                </div>
+                <div class="text-primary">
+                  <i class="fas fa-list fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Major Releases</h6>
+                  <h4 class="mb-0 text-success"><%= stats.major_releases %></h4>
+                </div>
+                <div class="text-success">
+                  <i class="fas fa-star fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Latest Release</h6>
+                  <h4 class="mb-0 text-info">
+                    <% if (stats.latest_release) { %>
+                      <%= new Date(stats.latest_release).toLocaleDateString() %>
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </h4>
+                </div>
+                <div class="text-info">
+                  <i class="fas fa-calendar fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="card-title mb-1">Active Versions</h6>
+                  <h4 class="mb-0 text-warning"><%= total %></h4>
+                </div>
+                <div class="text-warning">
+                  <i class="fas fa-code-branch fa-2x"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Changelog Entries Table -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Changelog Entries</h5>
+        </div>
+        <div class="card-body">
+          <% if (entries.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="fas fa-list fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No changelog entries yet</h5>
+              <p class="text-muted">Create your first changelog entry to get started.</p>
+              <a href="/admin/changelog/new" class="btn btn-primary">Add First Entry</a>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover" id="changelogTable">
+                <thead>
+                  <tr>
+                    <th>Version</th>
+                    <th>Title</th>
+                    <th>Release Date</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% entries.forEach(entry => { %>
+                    <tr>
+                      <td>
+                        <code><%= entry.version %></code>
+                        <% if (entry.is_major) { %>
+                          <span class="badge bg-success ms-1">Major</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary ms-1">Minor</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <strong><%= entry.title %></strong>
+                        <% if (entry.description) { %>
+                          <br><small class="text-muted"><%= entry.description.substring(0, 100) %>...</small>
+                        <% } %>
+                      </td>
+                      <td><%= new Date(entry.release_date).toLocaleDateString() %></td>
+                      <td>
+                        <% if (entry.is_major) { %>
+                          <span class="badge bg-success">Major Release</span>
+                        <% } else { %>
+                          <span class="badge bg-info">Update</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <a href="/admin/changelog/<%= entry.id %>/edit" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                          <button class="btn btn-sm btn-outline-danger delete-entry" data-id="<%= entry.id %>" data-title="<%= entry.title %>">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+              <nav aria-label="Changelog pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                  <% if (currentPage > 1) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage - 1 %>">Previous</a>
+                    </li>
+                  <% } %>
+
+                  <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                      <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                    </li>
+                  <% } %>
+
+                  <% if (currentPage < totalPages) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="?page=<%= currentPage + 1 %>">Next</a>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Changelog Entry</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the changelog entry "<strong id="deleteTitle"></strong>"?</p>
+        <p class="text-danger">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Delete functionality
+  let deleteId = null;
+
+  document.querySelectorAll('.delete-entry').forEach(btn => {
+    btn.addEventListener('click', function() {
+      deleteId = this.dataset.id;
+      document.getElementById('deleteTitle').textContent = this.dataset.title;
+      new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    });
+  });
+
+  document.getElementById('confirmDelete').addEventListener('click', async function() {
+    if (!deleteId) return;
+
+    try {
+      const response = await fetch(`/admin/changelog/${deleteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete changelog entry');
+    }
+  });
+
+  // Initialize DataTable
+  $('#changelogTable').DataTable({
+    "pageLength": 25,
+    "order": [[ 2, "desc" ]], // Sort by release date descending
+    "columnDefs": [
+      { "orderable": false, "targets": 4 } // Actions column not sortable
+    ]
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

@@ -9,3 +9,4 @@ ADD INDEX IF NOT EXISTS `idx_ip_address` (`ip_address`);
 CREATE OR REPLACE VIEW `ip_bans_view` AS
 SELECT * FROM `bans` WHERE `ban_type` = 'ip';
 
+

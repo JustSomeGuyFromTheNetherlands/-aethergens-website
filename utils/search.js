@@ -97,3 +97,4 @@ async function getSearchSuggestions(query, limit = 10) {
 
 module.exports = { searchAll, getSearchSuggestions };
 
+

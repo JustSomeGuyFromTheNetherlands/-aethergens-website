@@ -1,0 +1,192 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+          <h1 class="h2"><%= pageTitle %></h1>
+          <p class="text-muted"><%= pageSubtitle %></p>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <a href="/admin/changelog" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Changelog
+          </a>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0"><%= isEdit ? 'Edit Changelog Entry' : 'Create New Changelog Entry' %></h5>
+            </div>
+            <div class="card-body">
+              <% if (typeof error !== 'undefined' && error) { %>
+                <div class="alert alert-danger" role="alert">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <%= error %>
+                </div>
+              <% } %>
+
+              <form action="<%= isEdit ? `/admin/changelog/${entry.id}` : '/admin/changelog' %>" method="POST" id="changelogForm">
+                <div class="mb-3">
+                  <label for="version" class="form-label">Version <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="version" name="version"
+                         value="<%= entry ? entry.version : '' %>" required
+                         placeholder="e.g., 1.0.0, 1.2.3">
+                  <div class="form-text">Use semantic versioning (e.g., 1.0.0, 2.1.5)</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="title" name="title"
+                         value="<%= entry ? entry.title : '' %>" required
+                         placeholder="Brief description of the update">
+                  <div class="form-text">Keep it concise and descriptive</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea class="form-control" id="description" name="description" rows="6"
+                            placeholder="Detailed description of changes..."><%= entry ? entry.description : '' %></textarea>
+                  <div class="form-text">Describe what changed, new features, bug fixes, etc.</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="release_date" class="form-label">Release Date <span class="text-danger">*</span></label>
+                  <input type="datetime-local" class="form-control" id="release_date" name="release_date"
+                         value="<%= entry ? new Date(entry.release_date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16) %>" required>
+                  <div class="form-text">When was this version released?</div>
+                </div>
+
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="is_major" name="is_major" value="1"
+                           <%= entry && entry.is_major ? 'checked' : '' %>>
+                    <label class="form-check-label" for="is_major">
+                      Major Release
+                    </label>
+                  </div>
+                  <div class="form-text">Mark as major release for significant updates</div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                  <a href="/admin/changelog" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    <%= isEdit ? 'Update Entry' : 'Create Entry' %>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Section -->
+      <div class="row justify-content-center mt-4">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Preview</h6>
+            </div>
+            <div class="card-body">
+              <div id="preview">
+                <h4 id="preview-title">Preview Title</h4>
+                <p class="text-muted mb-2">
+                  <strong>Version:</strong> <code id="preview-version">1.0.0</code>
+                  <span class="badge bg-info ms-2" id="preview-badge">Update</span>
+                </p>
+                <p class="text-muted mb-2">
+                  <strong>Released:</strong> <span id="preview-date">December 23, 2024</span>
+                </p>
+                <div id="preview-description">Preview description will appear here...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('changelogForm');
+  const preview = {
+    title: document.getElementById('preview-title'),
+    version: document.getElementById('preview-version'),
+    badge: document.getElementById('preview-badge'),
+    date: document.getElementById('preview-date'),
+    description: document.getElementById('preview-description')
+  };
+
+  function updatePreview() {
+    const version = document.getElementById('version').value || '1.0.0';
+    const title = document.getElementById('title').value || 'Preview Title';
+    const description = document.getElementById('description').value || 'Preview description will appear here...';
+    const releaseDate = new Date(document.getElementById('release_date').value);
+    const isMajor = document.getElementById('is_major').checked;
+
+    preview.version.textContent = version;
+    preview.title.textContent = title;
+    preview.description.textContent = description.replace(/\n/g, '<br>');
+    preview.date.textContent = releaseDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    if (isMajor) {
+      preview.badge.textContent = 'Major Release';
+      preview.badge.className = 'badge bg-success ms-2';
+    } else {
+      preview.badge.textContent = 'Update';
+      preview.badge.className = 'badge bg-info ms-2';
+    }
+  }
+
+  // Update preview on input changes
+  ['version', 'title', 'description', 'release_date', 'is_major'].forEach(fieldId => {
+    document.getElementById(fieldId).addEventListener('input', updatePreview);
+    document.getElementById(fieldId).addEventListener('change', updatePreview);
+  });
+
+  // Initial preview update
+  updatePreview();
+
+  // Form submission
+  form.addEventListener('submit', function(e) {
+    // Basic client-side validation
+    const version = document.getElementById('version').value.trim();
+    const title = document.getElementById('title').value.trim();
+
+    if (!version) {
+      e.preventDefault();
+      alert('Version is required');
+      return;
+    }
+
+    if (!title) {
+      e.preventDefault();
+      alert('Title is required');
+      return;
+    }
+
+    // Show loading state
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

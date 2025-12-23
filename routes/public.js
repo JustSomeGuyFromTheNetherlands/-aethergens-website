@@ -1,159 +1,75 @@
 const express = require('express');
 const router = express.Router();
-const { getDB } = require('../database');
+const db = require('../database');
 const { getServerStatus } = require('../utils/minecraftQuery');
-const { updatePlayersAuto } = require('../utils/playerTracker');
-const { setCSPHeaders } = require('../middleware/security');
 
-// Auto-update players (rate limited) - skip if tables don't exist
-router.use(async (req, res, next) => {
+// GET / - Homepage
+router.get('/', async (req, res) => {
   try {
-    await updatePlayersAuto();
-  } catch (error) {
-    // Ignore errors if tables don't exist yet
-    if (!error.message.includes("doesn't exist") && !error.message.includes("Unknown table")) {
-      console.error('Player tracker error:', error.message);
-    }
-  }
-  next();
-});
-
-// Handle AJAX request for server status
-router.get('/ajax/server_status', async (req, res) => {
-  try {
-    const db = getDB();
     const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    if (serverSettings) {
-      const status = await getServerStatus();
-      res.json(status);
-    } else {
-      res.json({ online: false, error: 'Server not configured' });
-    }
-  } catch (error) {
-    res.json({ online: false, error: 'Query failed: ' + error.message });
-  }
-});
 
-// Main index page
-router.get('/', setCSPHeaders, async (req, res) => {
-  try {
-    const db = getDB();
-    
-    // Check if tables exist
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      // Table doesn't exist - show installation page
-      if (error.message.includes("doesn't exist") || error.message.includes("Unknown table") || error.code === 'ER_NO_SUCH_TABLE') {
-        return res.render('install', { 
-          message: 'Database tables not found. Please run the installation script.',
-          error: error.message
-        });
-      }
-      throw error;
-    }
-    
-    if (!serverSettings) {
-      return res.render('install', { 
-        message: 'Database tables not found. Please run the installation script.',
-        error: 'Table server_settings does not exist'
-      });
-    }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565,
-      status_message: 'Server Online',
-      maintenance_mode: 0
-    };
-    
-    // Get features, news, rules, store items
-    const features = await db.fetchAll("SELECT * FROM features ORDER BY order_index ASC LIMIT 8").catch(() => []);
-    const news = await db.fetchAll("SELECT * FROM news WHERE published = 1 ORDER BY created_at DESC LIMIT 5").catch(() => []);
-    
-    const rulesRaw = await db.fetchAll("SELECT category, rule_text FROM rules ORDER BY category, order_index").catch(() => []);
-    const rules = {};
-    rulesRaw.forEach(rule => {
-      if (!rules[rule.category]) {
-        rules[rule.category] = { category: rule.category, rules: [] };
-      }
-      rules[rule.category].rules.push(rule.rule_text);
-    });
-    const rulesArray = Object.values(rules);
-    
-    const storeItems = await db.fetchAll(
-      `SELECT si.*, sc.name as category_name 
-       FROM store_items si 
-       LEFT JOIN store_categories sc ON si.category_id = sc.id 
-       WHERE si.active = 1 
-       ORDER BY si.featured DESC, si.created_at DESC 
-       LIMIT 6`
-    ).catch(() => []);
-    
-    // Get stats
-    const stats = {
-      total_players: (await db.fetchOne("SELECT COUNT(*) as count FROM players").catch(() => ({ count: 0 })))?.count || 0,
-      online_now: (await db.fetchOne("SELECT COUNT(*) as count FROM players WHERE last_seen > DATE_SUB(NOW(), INTERVAL 1 HOUR)").catch(() => ({ count: 0 })))?.count || 0,
-      total_bans: (await db.fetchOne("SELECT COUNT(*) as count FROM bans WHERE active = 1").catch(() => ({ count: 0 })))?.count || 0
-    };
-    
+    // Get latest news
+    const news = await db.fetchAll("SELECT * FROM news ORDER BY created_at DESC LIMIT 5");
+
+    // Get server rules
+    const rules = await db.fetchAll(`
+      SELECT r.*, c.name as category_name, c.color as category_color
+      FROM rules r
+      LEFT JOIN rule_categories c ON r.category_id = c.id
+      ORDER BY c.sort_order ASC, r.sort_order ASC
+    `);
+
+    // Get store items
+    const storeItems = await db.fetchAll(`
+      SELECT si.*, sc.name as category_name
+      FROM store_items si
+      LEFT JOIN store_categories sc ON si.category_id = sc.id
+      WHERE si.active = 1
+      ORDER BY sc.sort_order ASC, si.sort_order ASC
+      LIMIT 8
+    `);
+
     // Get top players
-    const topPlayers = await db.fetchAll(
-      "SELECT username, join_count, last_seen FROM players ORDER BY join_count DESC, last_seen DESC LIMIT 10"
-    ).catch(() => []);
-    
-    // Get wall of fame (featured entries, or all if none featured)
-    let wallOfFame = [];
-    try {
-      // First try to get featured entries
-      wallOfFame = await db.fetchAll(
-        `SELECT wof.*, p.playtime, p.join_count, p.total_kills, p.level, p.balance
-         FROM wall_of_fame wof
-         LEFT JOIN players p ON wof.player_username = p.username
-         WHERE wof.featured = 1
-         ORDER BY wof.created_at DESC
-         LIMIT 12`
-      );
-      
-      // If no featured entries, get all entries
-      if (!wallOfFame || wallOfFame.length === 0) {
-        wallOfFame = await db.fetchAll(
-          `SELECT wof.*, p.playtime, p.join_count, p.total_kills, p.level, p.balance
-           FROM wall_of_fame wof
-           LEFT JOIN players p ON wof.player_username = p.username
-           ORDER BY wof.created_at DESC
-           LIMIT 12`
-        );
-      }
-    } catch (error) {
-      // Table might not exist yet, that's okay
-      console.error('Wall of Fame query error:', error.message);
-      wallOfFame = [];
-    }
-    
-    // Get wall of shame
-    const wallOfShame = await db.fetchAll(
-      "SELECT player_username, player_uuid, banned_by, reason, ban_date, expires_at FROM bans WHERE active = 1 ORDER BY ban_date DESC"
-    ).catch(() => []);
-    
+    const topPlayers = await db.fetchAll(`
+      SELECT username, join_count, last_seen
+      FROM players
+      ORDER BY join_count DESC
+      LIMIT 10
+    `);
+
+    // Get active bans for wall of shame
+    const wallOfShame = await db.fetchAll(`
+      SELECT b.player_username, b.reason, b.created_at, b.expires_at
+      FROM bans b
+      WHERE b.active = 1 AND b.expires_at > NOW()
+      ORDER BY b.created_at DESC
+      LIMIT 5
+    `);
+
+    // Get wall of fame entries
+    const wallOfFame = await db.fetchAll(`
+      SELECT * FROM wall_of_fame
+      WHERE featured = 1
+      ORDER BY created_at DESC
+      LIMIT 3
+    `);
+
     // Get notifications
-    const notifications = await db.fetchAll(
-      `SELECT * FROM notifications 
-       WHERE active = 1 
-       AND (start_date IS NULL OR start_date <= NOW()) 
-       AND (end_date IS NULL OR end_date >= NOW()) 
-       ORDER BY 
-         CASE priority
-           WHEN 'urgent' THEN 1
-           WHEN 'high' THEN 2
-           WHEN 'normal' THEN 3
-           WHEN 'low' THEN 4
-         END ASC, created_at DESC`
-    ).catch(() => []);
-    
-    // Get server status
+    const notifications = await db.fetchAll(`
+      SELECT * FROM notifications
+      WHERE active = 1 AND (expires_at IS NULL OR expires_at > NOW())
+      ORDER BY created_at DESC
+      LIMIT 3
+    `);
+
+    // Get changelog entries
+    const changelogEntries = await db.fetchAll(`
+      SELECT id, version, title, description, release_date, is_major
+      FROM changelog
+      ORDER BY release_date DESC
+      LIMIT 5
+    `);
+
     let serverStatus = null;
     if (serverSettings) {
       try {
@@ -162,447 +78,514 @@ router.get('/', setCSPHeaders, async (req, res) => {
         serverStatus = { online: false, error: 'Query failed' };
       }
     }
-    
+
     res.render('index', {
       serverSettings,
-      features,
+      serverStatus,
       news,
-      rules: rulesArray,
+      rules,
       storeItems,
-      stats,
       topPlayers,
       wallOfShame,
       wallOfFame,
       notifications,
-      serverStatus
+      changelogEntries
     });
   } catch (error) {
-    console.error('Index page error:', error);
-    res.status(500).render('error', { error: error.message });
+    console.error('Homepage error:', error);
+    res.render('index', {
+      serverSettings: null,
+      serverStatus: null,
+      news: [],
+      rules: [],
+      storeItems: [],
+      topPlayers: [],
+      wallOfShame: [],
+      wallOfFame: [],
+      notifications: [],
+      changelogEntries: []
+    });
   }
 });
 
-// Public sub-routes
-router.use('/public/appeal', require('./public/appeal'));
-router.use('/public/apply', require('./public/apply'));
+// GET /status - Server status page
+router.get('/status', async (req, res) => {
+  try {
+    const serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
 
-// Other public routes
-router.get('/vote', (req, res) => res.render('vote'));
-router.get('/leaderboard', async (req, res) => {
-  try {
-    const db = getDB();
-    const players = await db.fetchAll(
-      "SELECT username, join_count, last_seen FROM players ORDER BY join_count DESC, last_seen DESC LIMIT 100"
-    );
-    res.render('leaderboard', { players });
-  } catch (error) {
-    res.status(500).render('error', { error: error.message });
-  }
-});
-// Status page
-router.get('/status', setCSPHeaders, async (req, res) => {
-  try {
-    const db = getDB();
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
-    }
-    
-    serverSettings = serverSettings || { server_name: 'Minecraft Server' };
-    
-    // Get all notifications (including past ones)
-    let allNotifications = [];
-    try {
-      allNotifications = await db.fetchAll("SELECT * FROM notifications ORDER BY created_at DESC");
-      if (!Array.isArray(allNotifications)) {
-        allNotifications = [];
-      }
-    } catch (error) {
-      allNotifications = [];
-    }
-    
-    // Separate active and past incidents
-    const activeIncidents = [];
-    const pastIncidents = [];
-    const currentTime = Date.now();
-    
-    allNotifications.forEach(notif => {
-      const isActive = notif.active == 1;
-      const started = !notif.start_date || new Date(notif.start_date).getTime() <= currentTime;
-      const notEnded = !notif.end_date || new Date(notif.end_date).getTime() >= currentTime;
-      
-      if (isActive && started && notEnded) {
-        activeIncidents.push(notif);
-      } else {
-        pastIncidents.push(notif);
-      }
-    });
-    
-    // Get current server status
     let serverStatus = null;
+    let incidents = [];
+
     if (serverSettings) {
       try {
         serverStatus = await getServerStatus();
       } catch (error) {
-        serverStatus = { online: false, error: 'Query failed: ' + error.message };
+        serverStatus = { online: false, error: 'Query failed' };
       }
+
+      // Get recent incidents (you can create an incidents table later)
+      incidents = await db.fetchAll(`
+        SELECT * FROM server_incidents
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
     }
-    
+
     res.render('status', {
       serverSettings,
-      activeIncidents,
-      pastIncidents,
-      serverStatus
+      serverStatus,
+      incidents
     });
   } catch (error) {
     console.error('Status page error:', error);
-    res.status(500).render('error', { error: error.message });
+    res.render('status', {
+      serverSettings: null,
+      serverStatus: null,
+      incidents: []
+    });
   }
 });
 
-// Shop page
-router.get('/shop', setCSPHeaders, async (req, res) => {
+// GET /shop - Store page
+router.get('/shop', async (req, res) => {
   try {
-    const db = getDB();
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
-    }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565
-    };
-    
-    // Get shop categories and items from database
-    let shopCategories = [];
-    try {
-      const categories = await db.fetchAll("SELECT * FROM store_categories ORDER BY order_index ASC");
-      const items = await db.fetchAll("SELECT * FROM store_items WHERE active = 1 ORDER BY featured DESC, created_at DESC");
-      
-      // Group items by category
-      shopCategories = categories.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        icon: cat.icon || 'fas fa-box',
-        color: 'purple',
-        items: items.filter(item => item.category_id == cat.id).map(item => ({
-          name: item.name,
-          price: parseFloat(item.price),
-          description: item.description || '',
-          features: item.description ? item.description.split('\n').filter(f => f.trim()) : [],
-          image: item.icon_url || 'https://via.placeholder.com/300x200/667eea/ffffff?text=' + encodeURIComponent(item.name)
-        }))
-      }));
-      
-      // Add uncategorized items
-      const uncategorizedItems = items.filter(item => !item.category_id);
-      if (uncategorizedItems.length > 0) {
-        shopCategories.push({
-          id: null,
-          name: 'Other',
-          icon: 'fas fa-box',
-          color: 'slate',
-          items: uncategorizedItems.map(item => ({
-            name: item.name,
-            price: parseFloat(item.price),
-            description: item.description || '',
-            features: item.description ? item.description.split('\n').filter(f => f.trim()) : [],
-            image: item.icon_url || 'https://via.placeholder.com/300x200/667eea/ffffff?text=' + encodeURIComponent(item.name)
-          }))
-        });
-      }
-    } catch (error) {
-      console.error('Shop page error:', error);
-      // Use default categories if database fails
-      shopCategories = [];
-    }
-    
+    const categories = await db.fetchAll("SELECT * FROM store_categories ORDER BY sort_order ASC");
+
+    const items = await db.fetchAll(`
+      SELECT si.*, sc.name as category_name, sc.icon as category_icon
+      FROM store_items si
+      LEFT JOIN store_categories sc ON si.category_id = sc.id
+      WHERE si.active = 1
+      ORDER BY sc.sort_order ASC, si.sort_order ASC
+    `);
+
     res.render('shop', {
-      serverSettings,
-      shopCategories,
-      message: req.query.message || ''
+      categories,
+      items
     });
   } catch (error) {
     console.error('Shop page error:', error);
-    res.status(500).render('error', { error: error.message });
-  }
-});
-
-// Handle shop purchase
-router.post('/shop', setCSPHeaders, async (req, res) => {
-  try {
-    const { item_name, price } = req.body;
-    
-    // In real implementation, redirect to payment processor
-    res.redirect('/shop?message=' + encodeURIComponent(`Redirecting to payment for ${item_name} ($${price})...`));
-  } catch (error) {
-    console.error('Shop purchase error:', error);
-    res.status(500).render('error', { error: error.message });
-  }
-});
-
-// Register page
-router.get('/register', setCSPHeaders, async (req, res) => {
-  try {
-    const db = getDB();
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
-    }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565
-    };
-    
-    res.render('register', {
-      serverSettings,
-      message: '',
-      error: '',
-      success: false
+    res.render('shop', {
+      categories: [],
+      items: []
     });
-  } catch (error) {
-    console.error('Register page error:', error);
-    res.status(500).render('error', { error: error.message });
   }
 });
 
-// Handle registration
-router.post('/register', setCSPHeaders, async (req, res) => {
+// GET /register - Registration page
+router.get('/register', (req, res) => {
+  res.render('register', {
+    error: req.query.error,
+    success: req.query.success
+  });
+});
+
+// POST /register - Handle registration
+router.post('/register', async (req, res) => {
   try {
-    const db = getDB();
-    const bcrypt = require('bcrypt');
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
+    const { username, email, password, confirm_password } = req.body;
+
+    // Basic validation
+    if (!username || !email || !password) {
+      return res.render('register', {
+        error: 'All fields are required',
+        username, email
+      });
     }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565
-    };
-    
-    const { username, email, password, confirm_password, minecraft_username } = req.body;
-    
-    const errors = [];
-    
-    // Validate input
-    if (!username || username.trim().length < 3) {
-      errors.push('Username must be at least 3 characters');
-    }
-    
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.push('Valid email address is required');
-    }
-    
-    if (!password || password.length < 6) {
-      errors.push('Password must be at least 6 characters');
-    }
-    
+
     if (password !== confirm_password) {
-      errors.push('Passwords do not match');
+      return res.render('register', {
+        error: 'Passwords do not match',
+        username, email
+      });
     }
-    
-    if (!minecraft_username || !/^[a-zA-Z0-9_]{1,16}$/.test(minecraft_username)) {
-      errors.push('Valid Minecraft username is required (1-16 characters, letters/numbers/underscores)');
+
+    if (password.length < 6) {
+      return res.render('register', {
+        error: 'Password must be at least 6 characters',
+        username, email
+      });
     }
-    
-    if (errors.length === 0) {
-      // Check if user already exists
-      const existingUser = await db.fetchOne("SELECT id FROM users WHERE username = ? OR email = ?", [username, email]);
-      if (existingUser) {
-        errors.push('Username or email already exists');
-      } else {
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 10);
-        
-        // Insert user
-        await db.insert('users', {
-          username: username.trim(),
-          email: email.trim(),
-          password_hash: passwordHash,
-          role: 'user',
-          active: 1,
-          created_at: new Date(),
-          updated_at: new Date()
-        });
-        
-        return res.render('register', {
-          serverSettings,
-          message: 'Registration successful! You can now log in.',
-          error: '',
-          success: true
-        });
-      }
+
+    // Check if username or email already exists
+    const existingUser = await db.fetchOne(
+      "SELECT id FROM users WHERE username = ? OR email = ?",
+      [username, email]
+    );
+
+    if (existingUser) {
+      return res.render('register', {
+        error: 'Username or email already exists',
+        username, email
+      });
     }
-    
-    res.render('register', {
-      serverSettings,
-      message: '',
-      error: errors.join('<br>'),
-      success: false
-    });
+
+    // Hash password
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert user
+    await db.query(
+      "INSERT INTO users (username, email, password, role, created_at) VALUES (?, ?, ?, 'user', NOW())",
+      [username, email, hashedPassword]
+    );
+
+    res.redirect('/register?success=Registration successful! You can now log in.');
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).render('error', { error: error.message });
+    res.render('register', {
+      error: 'Registration failed. Please try again.',
+      username: req.body.username,
+      email: req.body.email
+    });
   }
 });
 
-// Enhanced vote page
-router.get('/vote', setCSPHeaders, async (req, res) => {
+// GET /vote - Voting page
+router.get('/vote', async (req, res) => {
   try {
-    const db = getDB();
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
-    }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565
-    };
-    
-    // Voting sites (could be stored in database, but using hardcoded for now)
-    const votingSites = [
-      {
-        name: 'Minecraft Server List',
-        url: 'https://minecraft-server-list.com/server/123456/vote/',
-        image: 'https://minecraft-server-list.com/favicon.ico',
-        cooldown: 24,
-        reward: '1 Vote Key'
-      },
-      {
-        name: 'Top Minecraft Servers',
-        url: 'https://topminecraftservers.org/vote/123456',
-        image: 'https://topminecraftservers.org/favicon.ico',
-        cooldown: 24,
-        reward: '1 Vote Key'
-      },
-      {
-        name: 'Minecraft Servers',
-        url: 'https://minecraftservers.org/vote/123456',
-        image: 'https://minecraftservers.org/favicon.ico',
-        cooldown: 24,
-        reward: '1 Vote Key'
-      },
-      {
-        name: 'Planet Minecraft',
-        url: 'https://www.planetminecraft.com/server/example/vote/',
-        image: 'https://www.planetminecraft.com/favicon.ico',
-        cooldown: 24,
-        reward: '2 Vote Keys'
-      }
-    ];
-    
-    // Handle vote callback
-    let message = '';
-    if (req.query.site !== undefined && req.query.callback) {
-      const siteId = parseInt(req.query.site);
-      if (votingSites[siteId]) {
-        message = `Vote recorded! You received a ${votingSites[siteId].reward}`;
-      }
-    }
-    
-    // Get user's vote history (demo - in real implementation, check cooldown)
-    const userVotes = votingSites.map(() => ({
-      canVote: true,
-      lastVote: null,
-      nextVote: null
-    }));
-    
-    // Get vote statistics (demo - in real implementation, query database)
-    const voteStats = {
-      totalVotes: 1247,
-      uniqueVoters: 89,
-      rewardsGiven: 156
-    };
-    
-    // Top voters (demo - in real implementation, query database)
-    const topVoters = [
-      { name: 'Player1', votes: 25, rank: 1 },
-      { name: 'Player2', votes: 22, rank: 2 },
-      { name: 'Player3', votes: 19, rank: 3 },
-      { name: 'Player4', votes: 17, rank: 4 },
-      { name: 'Player5', votes: 15, rank: 5 }
-    ];
-    
+    const votingSites = await db.fetchAll("SELECT * FROM voting_sites WHERE active = 1 ORDER BY sort_order ASC");
+
     res.render('vote', {
-      serverSettings,
-      votingSites,
-      userVotes,
-      message,
-      voteStats,
-      topVoters
+      votingSites
     });
   } catch (error) {
     console.error('Vote page error:', error);
-    res.status(500).render('error', { error: error.message });
+    res.render('vote', {
+      votingSites: []
+    });
   }
 });
 
-// Enhanced leaderboard page
-router.get('/leaderboard', setCSPHeaders, async (req, res) => {
+// GET /leaderboard - Leaderboard page
+router.get('/leaderboard', async (req, res) => {
   try {
-    const db = getDB();
-    
-    // Get server settings
-    let serverSettings;
-    try {
-      serverSettings = await db.fetchOne("SELECT * FROM server_settings ORDER BY id DESC LIMIT 1");
-    } catch (error) {
-      serverSettings = { server_name: 'Minecraft Server' };
-    }
-    
-    serverSettings = serverSettings || {
-      server_name: 'Minecraft Server',
-      server_ip: 'play.example.com',
-      server_port: 25565
-    };
-    
-    let players = [];
-    try {
-      players = await db.fetchAll(
-        "SELECT username, join_count, last_seen FROM players ORDER BY join_count DESC, last_seen DESC LIMIT 100"
-      );
-    } catch (error) {
-      console.error('Leaderboard error:', error);
-      players = [];
-    }
-    
+    const players = await db.fetchAll(`
+      SELECT username, join_count, first_seen, last_seen
+      FROM players
+      ORDER BY join_count DESC
+      LIMIT 50
+    `);
+
     res.render('leaderboard', {
-      serverSettings,
       players
     });
   } catch (error) {
     console.error('Leaderboard page error:', error);
-    res.status(500).render('error', { error: error.message });
+    res.render('leaderboard', {
+      players: []
+    });
+  }
+});
+
+// GET /changelog - Public changelog page
+router.get('/changelog', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    // Get changelog entries
+    const [entries] = await db.query(`
+      SELECT id, version, title, description, release_date, is_major, created_at
+      FROM changelog
+      ORDER BY release_date DESC, created_at DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+
+    // Get total count
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM changelog');
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get stats
+    const [statsResult] = await db.query(`
+      SELECT
+        COUNT(*) as total_entries,
+        SUM(CASE WHEN is_major = 1 THEN 1 ELSE 0 END) as major_releases,
+        MAX(release_date) as latest_release
+      FROM changelog
+    `);
+    const stats = statsResult[0];
+
+    res.render('changelog', {
+      entries,
+      currentPage: page,
+      totalPages,
+      total,
+      stats
+    });
+  } catch (error) {
+    console.error('Changelog page error:', error);
+    res.render('changelog', {
+      entries: [],
+      currentPage: 1,
+      totalPages: 1,
+      total: 0,
+      stats: { total_entries: 0, major_releases: 0, latest_release: null }
+    });
+  }
+});
+
+// GET /blog - Blog listing page
+router.get('/blog', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 12;
+    const offset = (page - 1) * limit;
+    const category = req.query.category;
+    const tag = req.query.tag;
+
+    let whereClause = "WHERE p.status = 'published'";
+    let params = [limit, offset];
+
+    if (category) {
+      whereClause += " AND p.category_id = ?";
+      params.unshift(category);
+    }
+
+    if (tag) {
+      whereClause += " AND EXISTS (SELECT 1 FROM blog_post_tags pt WHERE pt.post_id = p.id AND pt.tag_id = ?)";
+      params.unshift(tag);
+    }
+
+    // Get posts
+    const [posts] = await db.query(`
+      SELECT p.*, c.name as category_name, c.color as category_color, c.slug as category_slug,
+             u.username as author_name, COUNT(cm.id) as comment_count
+      FROM blog_posts p
+      LEFT JOIN blog_categories c ON p.category_id = c.id
+      LEFT JOIN users u ON p.author_id = u.id
+      LEFT JOIN blog_comments cm ON p.id = cm.post_id AND cm.status = 'approved'
+      ${whereClause}
+      GROUP BY p.id
+      ORDER BY p.published_at DESC, p.created_at DESC
+      LIMIT ? OFFSET ?
+    `, params);
+
+    // Get total count
+    const [countResult] = await db.query(`
+      SELECT COUNT(DISTINCT p.id) as total FROM blog_posts p ${whereClause.replace('GROUP BY p.id', '')}
+    `, params.slice(2));
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get categories
+    const [categories] = await db.query('SELECT id, name, slug, color FROM blog_categories WHERE active = 1 ORDER BY sort_order');
+
+    // Get popular tags
+    const [tags] = await db.query(`
+      SELECT t.id, t.name, t.slug, t.color, COUNT(pt.post_id) as post_count
+      FROM blog_tags t
+      LEFT JOIN blog_post_tags pt ON t.id = pt.tag_id
+      LEFT JOIN blog_posts p ON pt.post_id = p.id AND p.status = 'published'
+      GROUP BY t.id
+      HAVING post_count > 0
+      ORDER BY post_count DESC
+      LIMIT 20
+    `);
+
+    // Get recent posts for sidebar
+    const [recentPosts] = await db.query(`
+      SELECT id, title, slug, published_at
+      FROM blog_posts
+      WHERE status = 'published'
+      ORDER BY published_at DESC
+      LIMIT 5
+    `);
+
+    res.render('blog', {
+      posts,
+      categories,
+      tags,
+      recentPosts,
+      currentPage: page,
+      totalPages,
+      total,
+      filters: { category, tag },
+      pageTitle: 'Blog',
+      pageDescription: 'Latest news, updates, and stories from our community'
+    });
+  } catch (error) {
+    console.error('Blog page error:', error);
+    res.render('blog', {
+      posts: [],
+      categories: [],
+      tags: [],
+      recentPosts: [],
+      currentPage: 1,
+      totalPages: 1,
+      total: 0,
+      filters: {},
+      pageTitle: 'Blog',
+      pageDescription: 'Latest news, updates, and stories from our community'
+    });
+  }
+});
+
+// GET /blog/:slug - Individual blog post
+router.get('/blog/:slug', async (req, res) => {
+  try {
+    const [posts] = await db.query(`
+      SELECT p.*, c.name as category_name, c.color as category_color, c.slug as category_slug,
+             u.username as author_name
+      FROM blog_posts p
+      LEFT JOIN blog_categories c ON p.category_id = c.id
+      LEFT JOIN users u ON p.author_id = u.id
+      WHERE p.slug = ? AND p.status = 'published'
+    `, [req.params.slug]);
+
+    if (posts.length === 0) {
+      return res.status(404).render('error', { error: 'Blog post not found' });
+    }
+
+    const post = posts[0];
+
+    // Increment view count
+    await db.query('UPDATE blog_posts SET views = views + 1 WHERE id = ?', [post.id]);
+
+    // Get tags
+    const [tags] = await db.query(`
+      SELECT t.id, t.name, t.slug, t.color
+      FROM blog_tags t
+      INNER JOIN blog_post_tags pt ON t.id = pt.tag_id
+      WHERE pt.post_id = ?
+      ORDER BY t.name
+    `, [post.id]);
+
+    // Get comments
+    const [comments] = await db.query(`
+      SELECT c.*, p.slug as post_slug
+      FROM blog_comments c
+      LEFT JOIN blog_posts p ON c.post_id = p.id
+      WHERE c.post_id = ? AND c.status = 'approved' AND c.parent_id IS NULL
+      ORDER BY c.created_at ASC
+    `, [post.id]);
+
+    // Get replies for each comment
+    for (const comment of comments) {
+      const [replies] = await db.query(`
+        SELECT c.*, p.slug as post_slug
+        FROM blog_comments c
+        LEFT JOIN blog_posts p ON c.post_id = p.id
+        WHERE c.parent_id = ? AND c.status = 'approved'
+        ORDER BY c.created_at ASC
+      `, [comment.id]);
+      comment.replies = replies;
+    }
+
+    // Get related posts
+    const [relatedPosts] = await db.query(`
+      SELECT p.id, p.title, p.slug, p.excerpt, p.featured_image, p.published_at
+      FROM blog_posts p
+      WHERE p.id != ? AND p.status = 'published' AND (
+        p.category_id = ? OR
+        EXISTS (
+          SELECT 1 FROM blog_post_tags pt1
+          INNER JOIN blog_post_tags pt2 ON pt1.tag_id = pt2.tag_id
+          WHERE pt1.post_id = ? AND pt2.post_id = p.id
+        )
+      )
+      GROUP BY p.id
+      ORDER BY p.published_at DESC
+      LIMIT 3
+    `, [post.id, post.category_id, post.id]);
+
+    res.render('blog-post', {
+      post,
+      tags,
+      comments,
+      relatedPosts,
+      pageTitle: post.seo_title || post.title,
+      pageDescription: post.seo_description || post.excerpt
+    });
+  } catch (error) {
+    console.error('Blog post error:', error);
+    res.status(500).render('error', { error: 'Failed to load blog post' });
+  }
+});
+
+// POST /blog/:slug/comment - Add comment to post
+router.post('/blog/:slug/comment', async (req, res) => {
+  try {
+    const { author_name, author_email, content, parent_id } = req.body;
+
+    // Get post
+    const [posts] = await db.query('SELECT id, comments_enabled FROM blog_posts WHERE slug = ?', [req.params.slug]);
+    if (posts.length === 0) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    const post = posts[0];
+    if (!post.comments_enabled) {
+      return res.status(400).json({ error: 'Comments are disabled for this post' });
+    }
+
+    // Validate input
+    if (!author_name || !content) {
+      return res.status(400).json({ error: 'Name and comment are required' });
+    }
+
+    if (author_name.length > 100 || content.length > 2000) {
+      return res.status(400).json({ error: 'Input too long' });
+    }
+
+    // Insert comment
+    await db.query(`
+      INSERT INTO blog_comments (post_id, author_name, author_email, content, status, parent_id, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
+    `, [
+      post.id,
+      author_name,
+      author_email || null,
+      content,
+      parent_id || null,
+      req.ip,
+      req.get('User-Agent')
+    ]);
+
+    res.json({ success: true, message: 'Comment submitted for moderation' });
+  } catch (error) {
+    console.error('Comment submission error:', error);
+    res.status(500).json({ error: 'Failed to submit comment' });
+  }
+});
+
+// GET /blog/category/:slug - Posts by category
+router.get('/blog/category/:slug', async (req, res) => {
+  try {
+    const [categories] = await db.query('SELECT id, name FROM blog_categories WHERE slug = ? AND active = 1', [req.params.slug]);
+    if (categories.length === 0) {
+      return res.status(404).render('error', { error: 'Category not found' });
+    }
+
+    const category = categories[0];
+    req.query.category = category.id;
+    req.url = '/blog'; // Redirect to main blog page with category filter
+    router.handle(req, res);
+  } catch (error) {
+    console.error('Category page error:', error);
+    res.status(500).render('error', { error: 'Failed to load category' });
+  }
+});
+
+// GET /blog/tag/:slug - Posts by tag
+router.get('/blog/tag/:slug', async (req, res) => {
+  try {
+    const [tags] = await db.query('SELECT id, name FROM blog_tags WHERE slug = ?', [req.params.slug]);
+    if (tags.length === 0) {
+      return res.status(404).render('error', { error: 'Tag not found' });
+    }
+
+    const tag = tags[0];
+    req.query.tag = tag.id;
+    req.url = '/blog'; // Redirect to main blog page with tag filter
+    router.handle(req, res);
+  } catch (error) {
+    console.error('Tag page error:', error);
+    res.status(500).render('error', { error: 'Failed to load tag' });
   }
 });
 
 module.exports = router;
-

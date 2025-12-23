@@ -11,7 +11,7 @@ const config = {
     password: process.env.DB_PASS || '',
     charset: process.env.DB_CHARSET || 'utf8mb4',
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: process.env.VERCEL ? 2 : 10, // Reduce for Vercel serverless
     queueLimit: 0
   },
 

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog - <%= serverSettings ? serverSettings.server_name : 'Server' %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #667eea;
+      --secondary-color: #764ba2;
+      --accent-color: #f093fb;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --dark-bg: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #e2e8f0;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--dark-bg) 0%, #1a2332 100%);
+      color: var(--text-color);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: rgba(15, 23, 42, 0.95) !important;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px 12px 0 0 !important;
+    }
+
+    .timeline {
+      position: relative;
+      padding: 20px 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 30px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-left: 60px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -42px;
+      top: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      border: 3px solid var(--card-bg);
+    }
+
+    .timeline-item.major::before {
+      background: var(--success-color);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+    }
+
+    .version-badge {
+      font-size: 0.875rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .major-release {
+      border-left: 4px solid var(--success-color);
+    }
+
+    .stats-card {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      border: none;
+    }
+
+    .stats-card .card-body {
+      padding: 1.5rem;
+    }
+
+    .stats-card h4 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stats-card p {
+      font-size: 0.875rem;
+      opacity: 0.9;
+      margin-bottom: 0;
+    }
+
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .pagination .page-link {
+      background: var(--card-bg);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+
+    .pagination .page-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .pagination .page-item.active .page-link {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .changelog-content {
+      line-height: 1.6;
+    }
+
+    .changelog-content h4 {
+      color: var(--primary-color);
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .changelog-content ul {
+      padding-left: 1.5rem;
+    }
+
+    .changelog-content li {
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <i class="fas fa-server me-2"></i>
+        <%= serverSettings ? serverSettings.server_name : 'Server' %>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/status">Status</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/leaderboard">Leaderboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/shop">Shop</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/changelog">Changelog</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/vote">Vote</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row justify-content-center text-center mb-5">
+        <div class="col-lg-8">
+          <h1 class="display-4 fw-bold mb-3">
+            <i class="fas fa-history text-primary me-3"></i>
+            Changelog
+          </h1>
+          <p class="lead text-muted mb-4">
+            Stay updated with the latest features, improvements, and bug fixes
+          </p>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row g-4 mb-5">
+        <div class="col-md-4">
+          <div class="card stats-card text-center h-100">
+            <div class="card-body">
+              <i class="fas fa-code-branch fa-2x mb-3"></i>
+              <h4><%= stats.total_entries %></h4>
+              <p>Total Releases</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card stats-card text-center h-100">
+            <div class="card-body">
+              <i class="fas fa-star fa-2x mb-3"></i>
+              <h4><%= stats.major_releases %></h4>
+              <p>Major Releases</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card stats-card text-center h-100">
+            <div class="card-body">
+              <i class="fas fa-calendar-alt fa-2x mb-3"></i>
+              <h4>
+                <% if (stats.latest_release) { %>
+                  <%= new Date(stats.latest_release).toLocaleDateString() %>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </h4>
+              <p>Latest Release</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Changelog Timeline -->
+  <section class="py-5">
+    <div class="container">
+      <% if (entries.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="fas fa-list fa-3x text-muted mb-3"></i>
+          <h3 class="text-muted">No changelog entries yet</h3>
+          <p class="text-muted">Check back later for updates!</p>
+        </div>
+      <% } else { %>
+        <div class="timeline">
+          <% entries.forEach(entry => { %>
+            <div class="timeline-item <%= entry.is_major ? 'major' : '' %>">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <h3 class="h5 mb-1"><%= entry.title %></h3>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <code class="version-badge <%= entry.is_major ? 'bg-success' : 'bg-primary' %>">
+                      v<%= entry.version %>
+                    </code>
+                    <% if (entry.is_major) { %>
+                      <span class="badge bg-success">Major Release</span>
+                    <% } else { %>
+                      <span class="badge bg-info">Update</span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <small class="text-muted">
+                    <i class="fas fa-calendar me-1"></i>
+                    <%= new Date(entry.release_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) %>
+                  </small>
+                </div>
+              </div>
+
+              <% if (entry.description) { %>
+                <div class="changelog-content">
+                  <%= entry.description.replace(/\n/g, '<br>') %>
+                </div>
+              <% } else { %>
+                <p class="text-muted fst-italic">No description available</p>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+          <nav aria-label="Changelog pagination" class="mt-5">
+            <ul class="pagination justify-content-center">
+              <% if (currentPage > 1) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage - 1 %>">
+                    <i class="fas fa-chevron-left"></i> Previous
+                  </a>
+                </li>
+              <% } %>
+
+              <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                </li>
+              <% } %>
+
+              <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                  <a class="page-link" href="?page=<%= currentPage + 1 %>">
+                    Next <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        <% } %>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-4 mt-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-0">
+            <i class="fas fa-server me-2"></i>
+            <%= serverSettings ? serverSettings.server_name : 'Server' %>
+          </p>
+        </div>
+        <div class="col-md-6 text-end">
+          <p class="mb-0">
+            <i class="fas fa-code me-2"></i>
+            Powered by AetherGens CMS
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

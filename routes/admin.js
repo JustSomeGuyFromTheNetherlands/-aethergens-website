@@ -131,6 +131,8 @@ router.use('/logs', require('./admin/logs'));
 router.use('/social-links', require('./admin/social-links').router);
 router.use('/wall-of-fame', require('./admin/wall-of-fame'));
 router.use('/player', require('./admin/player-detail'));
+router.use('/changelog', require('./admin/changelog'));
+router.use('/blog', require('./admin/blog'));
 
 // Database migrations
 router.use('/database/migrate', require('../routes/database/migrate'));
